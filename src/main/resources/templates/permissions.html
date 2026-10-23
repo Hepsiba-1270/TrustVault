@@ -1,0 +1,708 @@
+
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrustVault | Permissions</title>
+
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            color: #172033;
+            background: #f2f5fb;
+        }
+
+        header {
+            background: #192957;
+            color: white;
+            padding: 28px 32px;
+        }
+
+        header h1 {
+            margin: 10px 0 16px;
+        }
+
+        nav {
+            background: white;
+            padding: 16px 32px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 24px;
+        }
+
+        nav a {
+            color: #0645d8;
+            text-decoration: none;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .logout-form {
+            margin-left: auto;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: auto;
+            padding: 28px 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 24px;
+            margin-bottom: 24px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, .07);
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: white;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            background: #192957;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #29417d;
+        }
+
+        button:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
+        .grant-button {
+            margin-top: 20px;
+        }
+
+        .revoke-button {
+            background: #b42318;
+        }
+
+        .revoke-button:hover {
+            background: #8f1d14;
+        }
+
+        .refresh-button {
+            background: #475569;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 13px 12px;
+            border-bottom: 1px solid #d9dee7;
+            overflow-wrap: anywhere;
+        }
+
+        th {
+            background: #e1e4e9;
+        }
+
+        .status {
+            padding: 12px;
+            margin: 14px 0;
+            border-radius: 6px;
+            background: #eef2f7;
+            color: #334155;
+        }
+
+        .error {
+            background: #fff0f0;
+            color: #9f2020;
+        }
+
+        .success {
+            background: #eaf8ef;
+            color: #17663a;
+        }
+
+        .empty {
+            padding: 20px;
+            text-align: center;
+            color: #64748b;
+        }
+
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .access-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        @media (max-width: 650px) {
+            header {
+                padding: 22px;
+            }
+
+            nav {
+                padding: 16px 22px;
+                gap: 16px;
+            }
+
+            .logout-form {
+                margin-left: 0;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 17px;
+            }
+
+            .section-heading {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Document Permissions</h1>
+    <p>Share documents with registered TrustVault users and manage access.</p>
+</header>
+
+<nav>
+    <a th:href="@{/dashboard}">Dashboard</a>
+    <a th:href="@{/documents}">Documents</a>
+    <a th:href="@{/permissions}">Permissions</a>
+    <a th:href="@{/audit}">Audit Logs</a>
+
+    <!-- Only administrators can see the Admin navigation link. -->
+    <a th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">Admin</a>
+
+    <form class="logout-form" th:action="@{/logout}" method="post">
+        <button type="submit">Logout</button>
+    </form>
+</nav>
+
+<main>
+
+    <div id="pageStatus" class="status" role="status" aria-live="polite">
+        Loading permissions...
+    </div>
+
+    <!-- OWNER: Share document -->
+    <section class="card" sec:authorize="hasRole('OWNER')">
+        <h2>Share a Document</h2>
+        <p>Select one of your documents and a registered user's username.</p>
+
+        <form id="grantForm">
+            <div class="form-grid">
+
+                <div class="field">
+                    <label for="documentId">Your Document</label>
+                    <select id="documentId" required>
+                        <option value="">Loading documents...</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="sharedUsername">Share With Username</label>
+                    <input id="sharedUsername"
+                           type="text"
+                           maxlength="100"
+                           autocomplete="off"
+                           placeholder="Enter registered username"
+                           required>
+                </div>
+
+                <div class="field">
+                    <label for="permissionType">Permission Type</label>
+                    <select id="permissionType" required>
+                        <option value="VIEW">VIEW — view only</option>
+                        <option value="DOWNLOAD">DOWNLOAD — view and download</option>
+                    </select>
+                </div>
+
+            </div>
+
+            <button class="grant-button" id="grantButton" type="submit">
+                Grant Permission
+            </button>
+        </form>
+    </section>
+
+    <!-- OWNER: Permissions granted to other users -->
+    <section class="card" sec:authorize="hasRole('OWNER')">
+        <div class="section-heading">
+            <h2>Permissions I Granted</h2>
+            <button type="button" class="refresh-button" id="refreshButton">
+                Refresh
+            </button>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                <tr>
+                    <th>Document ID</th>
+                    <th>Shared With</th>
+                    <th>Permission</th>
+                    <th>Created At</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+
+                <tbody id="ownerRows">
+                <tr>
+                    <td colspan="5" class="empty">Loading...</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Non-owner accounts: Documents shared with the current user -->
+    <section class="card" sec:authorize="!hasRole('OWNER')">
+        <h2>Documents Shared With Me</h2>
+        <p>These are permissions granted to your logged-in account.</p>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                <tr>
+                    <th>Document ID</th>
+                    <th>Owner</th>
+                    <th>Permission</th>
+                    <th>Created At</th>
+                    <th>Access</th>
+                </tr>
+                </thead>
+
+                <tbody id="sharedRows">
+                <tr>
+                    <td colspan="5" class="empty">Loading...</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<script>
+    const csrfToken =
+        document.querySelector('meta[name="_csrf"]')?.content;
+
+    const csrfHeader =
+        document.querySelector('meta[name="_csrf_header"]')?.content;
+
+    const pageStatus = document.getElementById("pageStatus");
+    const documentSelect = document.getElementById("documentId");
+    const grantForm = document.getElementById("grantForm");
+    const canManagePermissions = grantForm !== null;
+    const grantButton = document.getElementById("grantButton");
+    const ownerRows = document.getElementById("ownerRows");
+    const sharedRows = document.getElementById("sharedRows");
+    const refreshButton = document.getElementById("refreshButton");
+
+    function showStatus(message, kind = "") {
+        pageStatus.textContent = message;
+        pageStatus.className = "status" + (kind ? " " + kind : "");
+    }
+
+    async function apiFetch(url, options = {}) {
+        const headers = new Headers(options.headers || {});
+        headers.set("Accept", "application/json");
+
+        if (options.method && options.method !== "GET") {
+            if (!csrfToken || !csrfHeader) {
+                throw new Error(
+                    "CSRF token missing. Refresh the page and try again."
+                );
+            }
+
+            headers.set(csrfHeader, csrfToken);
+        }
+
+        const response = await fetch(url, {
+            ...options,
+            headers,
+            credentials: "same-origin"
+        });
+
+        if (!response.ok) {
+            let message = "Request failed (HTTP " + response.status + ").";
+
+            try {
+                const body = await response.json();
+
+                if (body.detail) {
+                    message = body.detail;
+                } else if (body.message) {
+                    message = body.message;
+                } else if (body.error) {
+                    message = body.error;
+                }
+            } catch (_) {
+                // Keep the HTTP status message if response is not JSON.
+            }
+
+            throw new Error(message);
+        }
+
+        if (response.status === 204) {
+            return null;
+        }
+
+        return response.json();
+    }
+
+    function addCell(row, value) {
+        const cell = document.createElement("td");
+
+        cell.textContent =
+            value === null || value === undefined || value === ""
+                ? "—"
+                : String(value);
+
+        row.appendChild(cell);
+        return cell;
+    }
+
+    function formatDate(value) {
+        if (!value) {
+            return "—";
+        }
+
+        const date = new Date(value);
+
+        return Number.isNaN(date.getTime())
+            ? String(value)
+            : date.toLocaleString();
+    }
+
+    function showEmptyRow(tbody, colspan, message) {
+        tbody.replaceChildren();
+
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+
+        cell.colSpan = colspan;
+        cell.className = "empty";
+        cell.textContent = message;
+
+        row.appendChild(cell);
+        tbody.appendChild(row);
+    }
+
+    async function loadDocuments() {
+        const documents = await apiFetch("/api/documents");
+
+        if (!Array.isArray(documents)) {
+            throw new Error("Invalid documents response from backend.");
+        }
+
+        documentSelect.replaceChildren();
+
+        const firstOption = document.createElement("option");
+        firstOption.value = "";
+        firstOption.textContent = documents.length
+            ? "Select a document"
+            : "No documents found. Upload a document first.";
+
+        documentSelect.appendChild(firstOption);
+
+        for (const doc of documents) {
+            const option = document.createElement("option");
+
+            option.value = doc.id;
+            option.textContent =
+                "ID " + doc.id + " — " +
+                (doc.originalFilename || doc.name || "Document");
+
+            documentSelect.appendChild(option);
+        }
+    }
+
+    async function loadOwnerPermissions() {
+        const permissions = await apiFetch("/api/permissions/owner");
+
+        if (!Array.isArray(permissions)) {
+            throw new Error("Invalid owner permissions response.");
+        }
+
+        ownerRows.replaceChildren();
+
+        if (!permissions.length) {
+            showEmptyRow(
+                ownerRows,
+                5,
+                "You have not granted any document permissions yet."
+            );
+            return;
+        }
+
+        for (const permission of permissions) {
+            const row = document.createElement("tr");
+
+            addCell(row, permission.documentId);
+            addCell(row, permission.sharedWithUsername);
+            addCell(row, permission.permissionType);
+            addCell(row, formatDate(permission.createdAt));
+
+            const actionCell = document.createElement("td");
+            const button = document.createElement("button");
+
+            button.type = "button";
+            button.className = "revoke-button";
+            button.textContent = "Revoke";
+
+            button.addEventListener("click", async () => {
+                if (!window.confirm("Revoke this permission?")) {
+                    return;
+                }
+
+                button.disabled = true;
+
+                try {
+                    await apiFetch(
+                        "/api/permissions/" +
+                        encodeURIComponent(permission.id),
+                        { method: "DELETE" }
+                    );
+
+                    showStatus(
+                        "Permission revoked successfully.",
+                        "success"
+                    );
+
+                    await loadAll();
+
+                } catch (error) {
+                    showStatus(error.message, "error");
+                    button.disabled = false;
+                }
+            });
+
+            actionCell.appendChild(button);
+            row.appendChild(actionCell);
+            ownerRows.appendChild(row);
+        }
+    }
+
+    async function loadSharedPermissions() {
+        const permissions =
+            await apiFetch("/api/permissions/shared-with-me");
+
+        if (!Array.isArray(permissions)) {
+            throw new Error("Invalid shared permissions response.");
+        }
+
+        sharedRows.replaceChildren();
+
+        if (!permissions.length) {
+            showEmptyRow(
+                sharedRows,
+                5,
+                "No documents have been shared with you yet."
+            );
+            return;
+        }
+
+        for (const permission of permissions) {
+            const row = document.createElement("tr");
+
+            addCell(row, permission.documentId);
+            addCell(row, permission.ownerUsername);
+            addCell(row, permission.permissionType);
+            addCell(row, formatDate(permission.createdAt));
+
+            const actionCell = document.createElement("td");
+            actionCell.className = "access-links";
+
+            const viewLink = document.createElement("a");
+            viewLink.textContent = "View";
+            viewLink.href =
+                "/api/documents/" +
+                encodeURIComponent(permission.documentId) +
+                "/view";
+            viewLink.target = "_blank";
+            viewLink.rel = "noopener noreferrer";
+
+            actionCell.appendChild(viewLink);
+
+            if (
+                String(permission.permissionType || "").toUpperCase()
+                === "DOWNLOAD"
+            ) {
+                const separator = document.createTextNode(" | ");
+                const downloadLink = document.createElement("a");
+
+                downloadLink.textContent = "Download";
+                downloadLink.href =
+                    "/api/documents/" +
+                    encodeURIComponent(permission.documentId) +
+                    "/download";
+
+                actionCell.appendChild(separator);
+                actionCell.appendChild(downloadLink);
+            }
+
+            row.appendChild(actionCell);
+            sharedRows.appendChild(row);
+        }
+    }
+
+    async function loadAll() {
+        showStatus("Loading permissions...");
+
+        const tasks = [];
+
+        if (canManagePermissions) {
+            tasks.push(loadDocuments());
+            tasks.push(loadOwnerPermissions());
+        }
+
+        if (sharedRows) {
+            tasks.push(loadSharedPermissions());
+        }
+
+        const results = await Promise.allSettled(tasks);
+        const failures = results.filter(
+            result => result.status === "rejected"
+        );
+
+        if (failures.length > 0) {
+            console.error("Permissions loading errors:", failures);
+
+            showStatus(
+                failures.map(result =>
+                    result.reason?.message ||
+                    "Unable to load permissions."
+                ).join(" "),
+                "error"
+            );
+        } else {
+            showStatus("Permissions loaded successfully.", "success");
+        }
+    }
+
+    if (grantForm) {
+        grantForm.addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const documentId = documentSelect.value;
+            const sharedWithUsername =
+                document.getElementById("sharedUsername").value.trim();
+            const permissionType =
+                document.getElementById("permissionType").value;
+
+            if (!documentId || !sharedWithUsername) {
+                showStatus(
+                    "Please select a document and enter a username.",
+                    "error"
+                );
+                return;
+            }
+
+            grantButton.disabled = true;
+
+            try {
+                await apiFetch("/api/permissions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        documentId: Number(documentId),
+                        sharedWithUsername: sharedWithUsername,
+                        permissionType: permissionType
+                    })
+                });
+
+                grantForm.reset();
+
+                showStatus(
+                    "Permission granted successfully.",
+                    "success"
+                );
+
+                await loadAll();
+
+            } catch (error) {
+                console.error("Grant permission error:", error);
+                showStatus(error.message, "error");
+
+            } finally {
+                grantButton.disabled = false;
+            }
+        });
+    }
+
+    if (refreshButton) {
+        refreshButton.addEventListener("click", loadAll);
+    }
+
+    loadAll();
+</script>
+
+</body>
+</html>

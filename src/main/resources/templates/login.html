@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>TrustVault | Sign In</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 24px;
+            font-family: Arial, sans-serif;
+            color: #172554;
+
+            background:
+                linear-gradient(
+                    rgba(5, 15, 38, 0.65),
+                    rgba(5, 15, 38, 0.78)
+                ),
+                url('/images/sigin.jpg') center / cover no-repeat fixed;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            padding: 36px;
+            background: rgba(255, 255, 255, 0.97);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 18px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+        }
+
+        .brand-icon {
+            width: 58px;
+            height: 58px;
+            margin: 0 auto 16px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e8efff;
+            color: #2457d6;
+            font-size: 29px;
+        }
+
+        h1 {
+            margin: 0;
+            text-align: center;
+            color: #173b83;
+            font-size: 30px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            margin: 10px 0 28px;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #26364a;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        input {
+            display: block;
+            width: 100%;
+            padding: 13px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #fff;
+            color: #172554;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            border-color: #2457d6;
+            box-shadow: 0 0 0 3px rgba(36, 87, 214, 0.13);
+        }
+
+        .signin-button {
+            width: 100%;
+            margin-top: 8px;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #2457d6;
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .signin-button:hover {
+            background: #173f9f;
+            transform: translateY(-1px);
+        }
+
+        .signin-button:focus-visible,
+        a:focus-visible {
+            outline: 3px solid #93b4ff;
+            outline-offset: 3px;
+        }
+
+        .signup-link {
+            margin-top: 22px;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .signup-link a {
+            color: #2457d6;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+
+        .security-note {
+            margin: 22px 0 0;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 16px;
+                background-attachment: scroll;
+            }
+
+            .login-card {
+                padding: 28px 22px;
+            }
+
+            h1 {
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="login-card">
+        <div class="brand-icon" aria-hidden="true">&#128274;</div>
+
+        <h1>TrustVault</h1>
+
+        <p class="subtitle">
+            Secure Document Sharing<br>
+            Sign in to access your account.
+        </p>
+
+        <form th:action="@{/login}" method="post">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input
+                    id="username"
+                    type="text"
+                    name="username"
+                    placeholder="Enter your username"
+                    autocomplete="username"
+                    required
+                    autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                    id="password"
+                    type="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    autocomplete="current-password"
+                    required>
+            </div>
+
+            <button class="signin-button" type="submit">
+                Sign In
+            </button>
+        </form>
+
+        <p class="signup-link">
+            Don't have an account?
+            <a th:href="@{/signup}">Create an account</a>
+        </p>
+
+        <p class="security-note">
+            &#128274; Secure access. Every action matters.
+        </p>
+    </main>
+</body>
+</html>

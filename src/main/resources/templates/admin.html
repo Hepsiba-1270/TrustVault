@@ -1,0 +1,863 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>TrustVault | Admin Dashboard</title>
+
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #243047;
+        }
+
+        header {
+            background: #14213d;
+            color: white;
+            padding: 20px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 25px;
+        }
+
+        header p {
+            margin: 6px 0 0;
+            color: #d8e2f0;
+        }
+
+        nav {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        nav a,
+        .logout-button {
+            color: white;
+            text-decoration: none;
+            background: #263d63;
+            border: 0;
+            padding: 10px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        nav a:hover,
+        .logout-button:hover {
+            background: #365584;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 28px auto;
+            padding: 0 20px;
+        }
+
+        section {
+            background: white;
+            margin-bottom: 24px;
+            padding: 24px;
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(20, 33, 61, 0.07);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #14213d;
+            font-size: 22px;
+        }
+
+        h3 {
+            color: #263d63;
+        }
+
+        .section-description {
+            color: #667085;
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(150px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: #eef3fa;
+            border-left: 4px solid #315a91;
+            padding: 18px;
+            border-radius: 7px;
+        }
+
+        .stat-card p {
+            margin: 0 0 10px;
+            color: #53627a;
+        }
+
+        .stat-card strong {
+            font-size: 28px;
+            color: #14213d;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5eaf1;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #eef3fa;
+            color: #263d63;
+        }
+
+        tr:hover td {
+            background: #fafcff;
+        }
+
+        button,
+        .primary-link {
+            display: inline-block;
+            padding: 10px 14px;
+            border: 0;
+            border-radius: 6px;
+            background: #2456a6;
+            color: white;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        button:hover,
+        .primary-link:hover {
+            background: #193f7c;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .secondary-button {
+            background: #53627a;
+        }
+
+        .secondary-button:hover {
+            background: #39465b;
+        }
+
+        select,
+        input {
+            width: 100%;
+            max-width: 280px;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: white;
+            font-size: 14px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-note {
+            display: block;
+            margin-top: 6px;
+            color: #667085;
+            font-size: 13px;
+        }
+
+        .message {
+            margin: 14px 0;
+            font-weight: bold;
+            overflow-wrap: anywhere;
+        }
+
+        .success {
+            color: #137547;
+        }
+
+        .error {
+            color: #b42318;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 5px;
+            background: #e5edfa;
+            color: #244b83;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .dashboard-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+
+        footer {
+            text-align: center;
+            color: #667085;
+            padding: 24px;
+        }
+
+        @media (max-width: 800px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, minmax(120px, 1fr));
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            section {
+                padding: 16px;
+            }
+
+            header {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div>
+        <h1>TrustVault</h1>
+        <p>Administrator Dashboard</p>
+    </div>
+
+    <nav>
+        <a th:href="@{/dashboard}">Dashboard</a>
+        <a th:href="@{/documents}">Documents</a>
+
+        <form th:action="@{/logout}" method="post" style="margin: 0;">
+            <button class="logout-button" type="submit">Logout</button>
+        </form>
+    </nav>
+</header>
+
+<main>
+
+    <!-- System overview -->
+    <section id="system-overview">
+        <h2>System Overview</h2>
+        <p class="section-description">
+            Monitor users, documents, permissions, and system activity.
+        </p>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <p>Total Users</p>
+                <strong id="totalUsers">--</strong>
+            </div>
+
+            <div class="stat-card">
+                <p>Total Documents</p>
+                <strong id="totalDocuments">--</strong>
+            </div>
+
+            <div class="stat-card">
+                <p>Total Permissions</p>
+                <strong id="totalPermissions">--</strong>
+            </div>
+
+            <div class="stat-card">
+                <p>Total Audit Logs</p>
+                <strong id="totalAuditLogs">--</strong>
+            </div>
+        </div>
+
+        <p id="statsMessage" class="message" role="status"></p>
+
+        <div class="dashboard-actions">
+            <button type="button" id="refreshStatsBtn">
+                Refresh Statistics
+            </button>
+        </div>
+    </section>
+
+    <!-- Security monitoring -->
+    <section id="security-monitoring">
+        <h2>Security Monitoring</h2>
+
+        <p class="section-description">
+            Review recorded security events and audit activity.
+        </p>
+
+        <div class="dashboard-actions">
+            <button type="button" id="refreshLogsBtn">
+                Refresh Security Logs
+            </button>
+        </div>
+
+        <p id="logsMessage" class="message" role="status"></p>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Action</th>
+                        <th>Details</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+
+                <tbody id="logsTableBody">
+                    <tr>
+                        <td colspan="4">Loading activity...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Recent activity -->
+    <section id="recent-activity">
+        <h2>Recent Activity</h2>
+
+        <p class="section-description">
+            The latest five audit records are shown below.
+        </p>
+
+        <ul id="recentActivityList">
+            <li>Loading recent activity...</li>
+        </ul>
+    </section>
+
+    <!-- Administrator access -->
+    <section id="administrator-access">
+        <h2>Administrator Access</h2>
+
+        <p>
+            This page is intended for authorized administrators.
+            Manage user roles carefully and grant elevated access only
+            when necessary.
+        </p>
+
+        <p>
+            Publicly registered accounts should receive the VIEWER role
+            by default. Administrator privileges should be assigned only
+            through authorized administrative workflows.
+        </p>
+    </section>
+
+    <!-- User management -->
+    <section id="user-management">
+        <h2>User Management</h2>
+
+        <p class="section-description">
+            View registered users and manage their access roles.
+        </p>
+
+        <button type="button" id="refreshUsersBtn">
+            Refresh Users
+        </button>
+
+        <p id="userMessage" class="message" role="status"
+           aria-live="polite"></p>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Current Role</th>
+                        <th>New Role</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody id="usersTableBody">
+                    <tr>
+                        <td colspan="5">Loading users...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <hr style="margin: 28px 0; border: 0; border-top: 1px solid #e5eaf1;">
+
+        <h3>Create Administrator-Managed Account</h3>
+
+        <p class="section-description">
+            Create an account for an authorized owner or administrator.
+            Passwords are encoded by the server before being stored.
+        </p>
+
+        <form id="createUserForm">
+            <div class="form-group">
+                <label for="newUsername">Username</label>
+
+                <input
+                    id="newUsername"
+                    name="username"
+                    type="text"
+                    minlength="3"
+                    maxlength="50"
+                    pattern="[A-Za-z0-9_.-]+"
+                    autocomplete="off"
+                    required>
+
+                <small class="form-note">
+                    Use 3–50 letters, numbers, dots, underscores, or hyphens.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="newPassword">Temporary Password</label>
+
+                <input
+                    id="newPassword"
+                    name="password"
+                    type="password"
+                    minlength="8"
+                    maxlength="72"
+                    autocomplete="new-password"
+                    required>
+
+                <small class="form-note">
+                    Use uppercase, lowercase, a number, and a special character.
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="newRole">Account Role</label>
+
+                <select id="newRole" name="role" required>
+                    <option value="OWNER">OWNER</option>
+                    <option value="ADMIN">ADMIN</option>
+                </select>
+            </div>
+
+            <button type="submit" id="createUserBtn">
+                Create User
+            </button>
+        </form>
+    </section>
+
+</main>
+
+<footer>
+    <p>TrustVault &copy; 2026 | Secure Document Management</p>
+</footer>
+
+<script>
+    const csrfToken =
+        document.querySelector('meta[name="_csrf"]')?.content;
+
+    const csrfHeader =
+        document.querySelector('meta[name="_csrf_header"]')?.content;
+
+    const usersTableBody = document.getElementById("usersTableBody");
+    const userMessage = document.getElementById("userMessage");
+    const logsTableBody = document.getElementById("logsTableBody");
+    const recentActivityList = document.getElementById("recentActivityList");
+
+    function setMessage(element, message, isError = false) {
+        element.textContent = message;
+        element.className = isError
+            ? "message error"
+            : "message success";
+    }
+
+    async function adminRequest(url, options = {}) {
+        const headers = new Headers(options.headers || {});
+        headers.set("Accept", "application/json");
+
+        if (options.body) {
+            headers.set("Content-Type", "application/json");
+        }
+
+        if (csrfToken && csrfHeader) {
+            headers.set(csrfHeader, csrfToken);
+        }
+
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            throw new Error(
+                data.message || "Request failed. Please try again."
+            );
+        }
+
+        return data;
+    }
+
+    // Load dashboard statistics.
+    async function loadStats() {
+        const message = document.getElementById("statsMessage");
+
+        try {
+            const stats = await adminRequest("/api/admin/stats");
+
+            document.getElementById("totalUsers").textContent =
+                stats.totalUsers ?? 0;
+
+            document.getElementById("totalDocuments").textContent =
+                stats.totalDocuments ?? 0;
+
+            document.getElementById("totalPermissions").textContent =
+                stats.totalPermissions ?? 0;
+
+            document.getElementById("totalAuditLogs").textContent =
+                stats.totalAuditLogs ?? 0;
+
+            setMessage(message, "Statistics loaded.");
+        } catch (error) {
+            setMessage(message, error.message, true);
+        }
+    }
+
+    // Format timestamps safely for display.
+    function formatTimestamp(value) {
+        if (!value) {
+            return "Not available";
+        }
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return String(value);
+        }
+
+        return date.toLocaleString();
+    }
+
+    // Load recent audit records.
+    async function loadLogs() {
+        logsTableBody.replaceChildren();
+        recentActivityList.replaceChildren();
+
+        try {
+            const logs = await adminRequest("/api/admin/recent-logs");
+
+            if (!Array.isArray(logs) || logs.length === 0) {
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+                cell.colSpan = 4;
+                cell.textContent = "No audit records found.";
+                row.appendChild(cell);
+                logsTableBody.appendChild(row);
+
+                const item = document.createElement("li");
+                item.textContent = "No recent activity.";
+                recentActivityList.appendChild(item);
+                return;
+            }
+
+            logs.forEach(log => {
+                const row = document.createElement("tr");
+
+                [
+                    log.username,
+                    log.action,
+                    log.details,
+                    formatTimestamp(log.timestamp)
+                ].forEach(value => {
+                    const cell = document.createElement("td");
+                    cell.textContent =
+                        value === null || value === undefined
+                            ? "-"
+                            : String(value);
+                    row.appendChild(cell);
+                });
+
+                logsTableBody.appendChild(row);
+
+                const item = document.createElement("li");
+                item.textContent =
+                    `${log.username || "Unknown user"} — ` +
+                    `${log.action || "Activity"} — ` +
+                    `${formatTimestamp(log.timestamp)}`;
+                recentActivityList.appendChild(item);
+            });
+
+            setMessage(
+                document.getElementById("logsMessage"),
+                "Recent audit records loaded."
+            );
+        } catch (error) {
+            const row = document.createElement("tr");
+            const cell = document.createElement("td");
+            cell.colSpan = 4;
+            cell.textContent = error.message;
+            row.appendChild(cell);
+            logsTableBody.appendChild(row);
+
+            const item = document.createElement("li");
+            item.textContent = "Unable to load recent activity.";
+            recentActivityList.appendChild(item);
+
+            setMessage(
+                document.getElementById("logsMessage"),
+                error.message,
+                true
+            );
+        }
+    }
+
+    // Load registered users without requesting password data.
+    async function loadUsers() {
+        usersTableBody.replaceChildren();
+
+        const loadingRow = document.createElement("tr");
+        const loadingCell = document.createElement("td");
+        loadingCell.colSpan = 5;
+        loadingCell.textContent = "Loading users...";
+        loadingRow.appendChild(loadingCell);
+        usersTableBody.appendChild(loadingRow);
+
+        try {
+            const users = await adminRequest("/api/admin/users");
+
+            usersTableBody.replaceChildren();
+
+            if (!Array.isArray(users) || users.length === 0) {
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+                cell.colSpan = 5;
+                cell.textContent = "No users found.";
+                row.appendChild(cell);
+                usersTableBody.appendChild(row);
+                return;
+            }
+
+            users.forEach(user => {
+                const row = document.createElement("tr");
+
+                const idCell = document.createElement("td");
+                idCell.textContent = String(user.id);
+
+                const usernameCell = document.createElement("td");
+                usernameCell.textContent = user.username;
+
+                const roleCell = document.createElement("td");
+                const badge = document.createElement("span");
+                badge.className = "role-badge";
+                badge.textContent = user.role;
+                roleCell.appendChild(badge);
+
+                const selectCell = document.createElement("td");
+                const roleSelect = document.createElement("select");
+                roleSelect.setAttribute(
+                    "aria-label",
+                    `New role for ${user.username}`
+                );
+
+                ["VIEWER", "OWNER", "ADMIN"].forEach(role => {
+                    const option = document.createElement("option");
+                    option.value = role;
+                    option.textContent = role;
+                    roleSelect.appendChild(option);
+                });
+
+                roleSelect.value = user.role;
+                selectCell.appendChild(roleSelect);
+
+                const actionCell = document.createElement("td");
+                const saveButton = document.createElement("button");
+                saveButton.type = "button";
+                saveButton.textContent = "Save Role";
+
+                saveButton.addEventListener("click", async () => {
+                    const confirmed = window.confirm(
+                        `Change ${user.username}'s role to ${roleSelect.value}?`
+                    );
+
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    saveButton.disabled = true;
+
+                    try {
+                        await adminRequest(
+                            `/api/admin/users/${user.id}/role`,
+                            {
+                                method: "PUT",
+                                body: JSON.stringify({
+                                    role: roleSelect.value
+                                })
+                            }
+                        );
+
+                        setMessage(
+                            userMessage,
+                            `Role updated for ${user.username}.`
+                        );
+
+                        await loadUsers();
+                        await loadStats();
+                    } catch (error) {
+                        setMessage(userMessage, error.message, true);
+                    } finally {
+                        saveButton.disabled = false;
+                    }
+                });
+
+                actionCell.appendChild(saveButton);
+
+                row.append(
+                    idCell,
+                    usernameCell,
+                    roleCell,
+                    selectCell,
+                    actionCell
+                );
+
+                usersTableBody.appendChild(row);
+            });
+        } catch (error) {
+            usersTableBody.replaceChildren();
+
+            const row = document.createElement("tr");
+            const cell = document.createElement("td");
+            cell.colSpan = 5;
+            cell.textContent = error.message;
+            row.appendChild(cell);
+            usersTableBody.appendChild(row);
+
+            setMessage(userMessage, error.message, true);
+        }
+    }
+
+    // Create an administrator-managed account.
+    document.getElementById("createUserForm")
+        .addEventListener("submit", async event => {
+            event.preventDefault();
+
+            const form = event.currentTarget;
+            const createButton =
+                document.getElementById("createUserBtn");
+
+            const username =
+                document.getElementById("newUsername").value.trim();
+
+            const password =
+                document.getElementById("newPassword").value;
+
+            const role =
+                document.getElementById("newRole").value;
+
+            if (username.length < 3 || username.length > 50) {
+                setMessage(
+                    userMessage,
+                    "Username must contain 3–50 characters.",
+                    true
+                );
+                return;
+            }
+
+            const passwordPattern =
+                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9\s])\S+$/;
+
+            if (
+                password.length < 8 ||
+                password.length > 72 ||
+                !passwordPattern.test(password)
+            ) {
+                setMessage(
+                    userMessage,
+                    "Password must be 8–72 characters and include uppercase, lowercase, number, and special character.",
+                    true
+                );
+                return;
+            }
+
+            createButton.disabled = true;
+
+            try {
+                await adminRequest("/api/admin/users", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        role
+                    })
+                });
+
+                form.reset();
+
+                setMessage(
+                    userMessage,
+                    "User created successfully."
+                );
+
+                await loadUsers();
+                await loadStats();
+            } catch (error) {
+                setMessage(userMessage, error.message, true);
+            } finally {
+                createButton.disabled = false;
+            }
+        });
+
+    document.getElementById("refreshUsersBtn")
+        .addEventListener("click", loadUsers);
+
+    document.getElementById("refreshStatsBtn")
+        .addEventListener("click", loadStats);
+
+    document.getElementById("refreshLogsBtn")
+        .addEventListener("click", loadLogs);
+
+    // Load dashboard data when the page opens.
+    loadStats();
+    loadLogs();
+    loadUsers();
+</script>
+
+</body>
+</html>

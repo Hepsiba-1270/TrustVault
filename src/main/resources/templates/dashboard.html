@@ -1,0 +1,648 @@
+
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrustVault | Dashboard</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 65px;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #07152e;
+            color: #ffffff;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            min-height: 62px;
+            padding: 18px 25px;
+            background: rgba(7, 20, 48, 0.88);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        nav a {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.25s ease;
+        }
+
+        nav a:hover {
+            color: #67d5ff;
+        }
+
+        .brand {
+            font-size: 20px;
+            font-weight: bold;
+            color: #67d5ff;
+            margin-right: auto;
+        }
+
+        /* Profile menu */
+        .profile-menu {
+            position: fixed;
+            top: 10px;
+            right: 20px;
+            z-index: 1100;
+        }
+
+        .profile-button {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 2px solid white;
+            background: #2458a6;
+            color: white;
+            font-size: 21px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .profile-button:hover {
+            background: #173f80;
+        }
+
+        .profile-details {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 240px;
+            padding: 18px;
+            background: #ffffff;
+            border: 1px solid #dbe5f5;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
+            color: #26364a;
+        }
+
+        .profile-details.show {
+            display: block;
+        }
+
+        .profile-details p {
+            margin: 14px 0;
+            overflow-wrap: anywhere;
+        }
+
+        .profile-role {
+            display: inline-block;
+            background: #eaf0ff;
+            color: #2458a6;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .logout-button {
+            width: 100%;
+            padding: 10px;
+            background: #b42318;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .logout-button:hover {
+            background: #8f1d14;
+        }
+
+        /* Full-screen hero */
+        .hero {
+            min-height: 100vh;
+            min-height: 100svh;
+            background:
+                linear-gradient(
+                    90deg,
+                    rgba(3, 15, 39, 0.88),
+                    rgba(3, 15, 39, 0.30)
+                ),
+                url('/images/hero.jpg') center/cover no-repeat;
+            display: flex;
+            align-items: center;
+            padding: 120px 8%;
+          
+            color: white;
+            position: relative;
+        }
+
+        .hero-content {
+            max-width: 700px;
+        }
+
+        .eyebrow {
+            color: #67d5ff;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            font-size: clamp(46px, 7vw, 82px);
+            margin: 15px 0;
+            line-height: 1.1;
+        }
+
+        .hero h1 span {
+            color: #45c8ff;
+        }
+
+        .hero p {
+            font-size: clamp(16px, 2vw, 21px);
+            line-height: 1.7;
+            max-width: 620px;
+        }
+
+        /* Buttons */
+        .action-button {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 13px 24px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #168cff, #4559ef);
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .action-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 22px rgba(35, 135, 255, 0.35);
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffffff;
+            text-align: center;
+            font-size: 13px;
+            opacity: 0.85;
+        }
+
+        .scroll-hint span {
+            display: block;
+            font-size: 25px;
+            margin-top: 5px;
+        }
+
+        /* Full-screen feature sections */
+        .feature {
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            align-items: center;
+            padding: 100px 8%;
+            position: relative;
+            overflow: hidden;
+            color: white;
+            background-color: #0b1c3b;
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            isolation: isolate;
+        }
+
+        .feature::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                90deg,
+                rgba(3, 15, 37, 0.94) 0%,
+                rgba(3, 15, 37, 0.78) 48%,
+                rgba(3, 15, 37, 0.25) 100%
+            );
+            z-index: -1;
+        }
+
+        .feature-content {
+            max-width: 620px;
+        }
+
+        .documents {
+            background-image: url('/images/documents.jpg');
+        }
+
+        .permissions {
+            background-image: url('/images/permissions.jpg');
+        }
+
+        .audit {
+            background-image: url('/images/audit.jpg');
+        }
+
+        .admin-feature {
+            background-image: url('/images/hero.jpg');
+        }
+
+        .feature-label {
+            display: inline-block;
+            padding: 8px 13px;
+            background: rgba(36, 137, 255, 0.20);
+            border: 1px solid rgba(103, 213, 255, 0.45);
+            border-radius: 20px;
+            color: #91e3ff;
+            font-size: 12px;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+
+        .feature h2 {
+            font-size: clamp(36px, 5vw, 58px);
+            margin: 22px 0 15px;
+        }
+
+        .feature p {
+            font-size: 18px;
+            line-height: 1.8;
+            color: #e0eaff;
+        }
+
+        .feature ul {
+            list-style: none;
+            padding: 0;
+            margin: 25px 0;
+        }
+
+        .feature li {
+            margin: 16px 0;
+            font-size: 16px;
+            color: #edf5ff;
+        }
+
+        .feature li::before {
+            content: "✓";
+            color: #55ddff;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+
+        /* Scroll reveal animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(45px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Footer */
+        footer {
+            padding: 25px;
+            text-align: center;
+            background: #061127;
+            color: #b9c8e4;
+            font-size: 13px;
+        }
+
+        /* Responsive layout */
+        @media (max-width: 700px) {
+            nav {
+                padding: 14px 12px;
+                padding-right: 60px;
+                gap: 12px;
+            }
+
+            .brand {
+                width: 100%;
+                margin-right: 0;
+            }
+
+            nav a {
+                font-size: 12px;
+            }
+
+            .profile-menu {
+                top: 10px;
+                right: 12px;
+            }
+
+            .hero {
+                padding: 100px 25px 75px;
+            }
+
+            .feature {
+                padding: 90px 25px;
+            }
+
+            .feature::before {
+                background: rgba(3, 15, 37, 0.80);
+            }
+
+            .feature p {
+                font-size: 16px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+
+            .reveal {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+
+            * {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Profile menu -->
+    <div class="profile-menu">
+        <button type="button"
+                class="profile-button"
+                id="profileButton"
+                aria-label="View profile details"
+                aria-expanded="false"
+                aria-controls="profileDetails">
+            &#128100;
+        </button>
+
+        <div class="profile-details"
+             id="profileDetails"
+             aria-hidden="true">
+
+            <strong>My Profile</strong>
+
+            <p>
+                Username:
+                <span sec:authentication="name"></span>
+            </p>
+
+            <p>
+                Role:
+                <span class="profile-role"
+                      sec:authorize="hasRole('ADMIN')">ADMIN</span>
+
+                <span class="profile-role"
+                      sec:authorize="hasRole('OWNER')">OWNER</span>
+
+                <span class="profile-role"
+                      sec:authorize="hasRole('VIEWER')">VIEWER</span>
+            </p>
+
+            <form th:action="@{/logout}" method="post">
+                <button class="logout-button" type="submit">
+                    Logout
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main navigation -->
+    <nav>
+        <a class="brand" th:href="@{/dashboard}">TrustVault</a>
+
+        <a th:href="@{/dashboard}">Dashboard</a>
+        <a th:href="@{/documents}">Documents</a>
+        <a th:href="@{/permissions}">Permissions</a>
+        <a th:href="@{/audit}">Audit Logs</a>
+
+        <!-- Only ADMIN can see this link -->
+        <a th:href="@{/admin}"
+           sec:authorize="hasRole('ADMIN')">
+            Admin
+        </a>
+    </nav>
+
+    <main>
+
+        <!-- Hero section -->
+        <section class="hero" id="home">
+            <div class="hero-content reveal">
+                <div class="eyebrow">Welcome to</div>
+
+                <h1>Trust<span>Vault</span></h1>
+
+                <p>
+                    Secure Document Sharing with a Real Audit Trail.
+                    Manage your documents, control access and keep track
+                    of every activity in one place.
+                </p>
+
+                <a class="action-button" href="#documents">
+                    Explore Features &nbsp; ↓
+                </a>
+            </div>
+
+            <div class="scroll-hint">
+                Scroll to explore
+                <span>↓</span>
+            </div>
+        </section>
+
+        <!-- Documents section -->
+        <section class="feature documents" id="documents">
+            <div class="feature-content reveal">
+                <span class="feature-label">01 / DOCUMENT MANAGEMENT</span>
+
+                <h2>Documents</h2>
+
+                <p>
+                    Upload, organize, search and securely manage your
+                    important documents from one place.
+                </p>
+
+                <ul>
+                    <li>Secure private file storage</li>
+                    <li>Easy document search</li>
+                    <li>Owner-controlled uploads</li>
+                    <li>View and download based on permissions</li>
+                </ul>
+
+                <a class="action-button" th:href="@{/documents}">
+                    Open Documents &nbsp; →
+                </a>
+            </div>
+        </section>
+
+        <!-- Permissions section -->
+        <section class="feature permissions" id="permissions">
+            <div class="feature-content reveal">
+                <span class="feature-label">02 / ACCESS CONTROL</span>
+
+                <h2>Permissions</h2>
+
+                <p>
+                    Share documents with trusted users and decide
+                    exactly how they can access your files.
+                </p>
+
+                <ul>
+                    <li>Grant VIEW permission</li>
+                    <li>Grant DOWNLOAD permission</li>
+                    <li>Revoke access when required</li>
+                    <li>Control access to shared documents</li>
+                </ul>
+
+                <a class="action-button" th:href="@{/permissions}">
+                    Manage Permissions &nbsp; →
+                </a>
+            </div>
+        </section>
+
+        <!-- Audit trail section -->
+        <section class="feature audit" id="audit">
+            <div class="feature-content reveal">
+                <span class="feature-label">03 / ACTIVITY MONITORING</span>
+
+                <h2>Audit Trail</h2>
+
+                <p>
+                    Track document activity and review recorded events
+                    to improve transparency and security.
+                </p>
+
+                <ul>
+                    <li>Document upload records</li>
+                    <li>Document view activity</li>
+                    <li>Download activity</li>
+                    <li>Review access and security events</li>
+                </ul>
+
+                <a class="action-button" th:href="@{/audit}">
+                    View Audit Logs &nbsp; →
+                </a>
+            </div>
+        </section>
+
+        <!-- Admin section: visible only to ADMIN -->
+        <section class="feature admin-feature"
+                 id="administration"
+                 sec:authorize="hasRole('ADMIN')">
+
+            <div class="feature-content reveal">
+                <span class="feature-label">04 / SYSTEM MANAGEMENT</span>
+
+                <h2>Administration</h2>
+
+                <p>
+                    Manage users and roles, and review system activity
+                    through the administration panel.
+                </p>
+
+                <ul>
+                    <li>Manage user accounts</li>
+                    <li>Assign and update user roles</li>
+                    <li>Review system activity</li>
+                    <li>Monitor security and audit records</li>
+                </ul>
+
+                <a class="action-button" th:href="@{/admin}">
+                    Open Admin Panel &nbsp; →
+                </a>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>© 2026 TrustVault | Secure Document Sharing with a Real Audit Trail</p>
+    </footer>
+
+    <script>
+        // Profile menu controls
+        const profileButton = document.getElementById("profileButton");
+        const profileDetails = document.getElementById("profileDetails");
+
+        function closeProfileMenu() {
+            profileDetails.classList.remove("show");
+            profileButton.setAttribute("aria-expanded", "false");
+            profileDetails.setAttribute("aria-hidden", "true");
+        }
+
+        profileButton.addEventListener("click", function(event) {
+            event.stopPropagation();
+
+            const isOpen = profileDetails.classList.toggle("show");
+
+            profileButton.setAttribute("aria-expanded", String(isOpen));
+            profileDetails.setAttribute("aria-hidden", String(!isOpen));
+        });
+
+        document.addEventListener("click", function(event) {
+            if (!event.target.closest(".profile-menu")) {
+                closeProfileMenu();
+            }
+        });
+
+        document.addEventListener("keydown", function(event) {
+            if (event.key === "Escape") {
+                closeProfileMenu();
+                profileButton.focus();
+            }
+        });
+
+        // Reveal sections as they enter the viewport
+        const revealElements = document.querySelectorAll(".reveal");
+
+        if ("IntersectionObserver" in window) {
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add("active");
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, {
+                threshold: 0.12
+            });
+
+            revealElements.forEach(function(element) {
+                observer.observe(element);
+            });
+        } else {
+            revealElements.forEach(function(element) {
+                element.classList.add("active");
+            });
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,384 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>TrustVault | Create Account</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 24px;
+            font-family: Arial, sans-serif;
+            color: #172554;
+
+            background:
+                linear-gradient(
+                    rgba(5, 15, 38, 0.65),
+                    rgba(5, 15, 38, 0.78)
+                ),
+                url('/images/siup.jpg') center / cover no-repeat fixed;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .signup-card {
+            width: 100%;
+            max-width: 440px;
+            padding: 32px;
+            background: rgba(255, 255, 255, 0.97);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 18px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+        }
+
+        .brand-icon {
+            width: 52px;
+            height: 52px;
+            margin: 0 auto 12px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e8efff;
+            color: #2457d6;
+            font-size: 26px;
+        }
+
+        h1 {
+            margin: 0;
+            text-align: center;
+            color: #173b83;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            margin: 9px 0 24px;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 7px;
+            color: #26364a;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            display: block;
+            width: 100%;
+            padding: 12px 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: #fff;
+            color: #172554;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: #2457d6;
+            box-shadow: 0 0 0 3px rgba(36, 87, 214, 0.13);
+        }
+
+        .note,
+        .password-hint {
+            margin: 7px 0 0;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .password-strength {
+            margin-top: 7px;
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 1.5;
+        }
+
+        .error {
+            padding: 11px;
+            border-radius: 7px;
+            background: #fff0ef;
+            color: #b42318;
+            font-size: 13px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        .success {
+            padding: 11px;
+            border-radius: 7px;
+            background: #eaf8ef;
+            color: #187344;
+            font-size: 13px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+
+        .signup-button {
+            width: 100%;
+            margin-top: 12px;
+            padding: 13px;
+            border: none;
+            border-radius: 8px;
+            background: #2457d6;
+            color: #fff;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .signup-button:hover:not(:disabled) {
+            background: #173f9f;
+            transform: translateY(-1px);
+        }
+
+        .signup-button:disabled {
+            background: #879bb9;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .signup-button:focus-visible,
+        .footer a:focus-visible {
+            outline: 3px solid #93b4ff;
+            outline-offset: 3px;
+        }
+
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .footer a {
+            color: #2457d6;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 16px;
+                background-attachment: scroll;
+            }
+
+            .signup-card {
+                padding: 25px 21px;
+            }
+
+            h1 {
+                font-size: 25px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="signup-card">
+        <div class="brand-icon" aria-hidden="true">&#128274;</div>
+
+        <h1>TrustVault</h1>
+
+        <p class="subtitle">Create your secure account</p>
+
+        <p
+            class="error"
+            th:if="${error}"
+            th:text="${error}"
+            role="alert">
+        </p>
+
+        <p
+            class="success"
+            th:if="${success}"
+            th:text="${success}"
+            role="status">
+        </p>
+
+        <form
+            th:action="@{/signup}"
+            method="post"
+            id="signupForm">
+
+            <!-- Preserve Spring Security CSRF protection -->
+            <input
+                type="hidden"
+                th:name="${_csrf.parameterName}"
+                th:value="${_csrf.token}">
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    minlength="3"
+                    maxlength="50"
+                    autocomplete="username"
+                    placeholder="Enter username"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    minlength="8"
+                    autocomplete="new-password"
+                    placeholder="Create a strong password"
+                    aria-describedby="passwordStrength passwordHint"
+                    required>
+
+                <div
+                    id="passwordStrength"
+                    class="password-strength"
+                    aria-live="polite">
+                    Enter a password
+                </div>
+
+                <p id="passwordHint" class="password-hint">
+                    Minimum 8 characters, including uppercase,
+                    lowercase, a number, and a special character.
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    minlength="8"
+                    autocomplete="new-password"
+                    placeholder="Confirm your password"
+                    aria-describedby="passwordMatch"
+                    required>
+
+                <div
+                    id="passwordMatch"
+                    class="password-hint"
+                    aria-live="polite">
+                </div>
+            </div>
+
+            <p class="note">
+                New accounts receive Viewer access by default.
+                Owner and Admin access requires authorized assignment.
+            </p>
+
+            <button
+                class="signup-button"
+                id="signupButton"
+                type="submit">
+                Create Account
+            </button>
+        </form>
+
+        <div class="footer">
+            Already have an account?
+            <a th:href="@{/login}">Sign in</a>
+        </div>
+    </main>
+
+    <script>
+        const passwordInput = document.getElementById("password");
+        const confirmInput = document.getElementById("confirmPassword");
+        const strengthMessage = document.getElementById("passwordStrength");
+        const matchMessage = document.getElementById("passwordMatch");
+        const signupForm = document.getElementById("signupForm");
+        const signupButton = document.getElementById("signupButton");
+
+        function isStrongPassword(password) {
+            return password.length >= 8
+                && /[A-Z]/.test(password)
+                && /[a-z]/.test(password)
+                && /[0-9]/.test(password)
+                && /[^A-Za-z0-9]/.test(password);
+        }
+
+        function updatePasswordStatus() {
+            const password = passwordInput.value;
+
+            if (password.length === 0) {
+                strengthMessage.textContent = "Enter a password";
+                strengthMessage.style.color = "#64748b";
+            } else if (isStrongPassword(password)) {
+                strengthMessage.textContent = "Password meets requirements";
+                strengthMessage.style.color = "#187344";
+            } else {
+                strengthMessage.textContent =
+                    "Use 8+ characters with uppercase, lowercase, number and special character";
+                strengthMessage.style.color = "#b42318";
+            }
+
+            if (confirmInput.value.length === 0) {
+                matchMessage.textContent = "";
+            } else if (password === confirmInput.value) {
+                matchMessage.textContent = "Passwords match";
+                matchMessage.style.color = "#187344";
+            } else {
+                matchMessage.textContent = "Passwords do not match";
+                matchMessage.style.color = "#b42318";
+            }
+        }
+
+        passwordInput.addEventListener("input", updatePasswordStatus);
+        confirmInput.addEventListener("input", updatePasswordStatus);
+
+        signupForm.addEventListener("submit", function(event) {
+            if (!isStrongPassword(passwordInput.value)) {
+                event.preventDefault();
+
+                strengthMessage.textContent =
+                    "Signup blocked. Please meet all password requirements.";
+                strengthMessage.style.color = "#b42318";
+
+                passwordInput.focus();
+                return;
+            }
+
+            if (passwordInput.value !== confirmInput.value) {
+                event.preventDefault();
+
+                matchMessage.textContent = "Passwords do not match";
+                matchMessage.style.color = "#b42318";
+
+                confirmInput.focus();
+                return;
+            }
+
+            signupButton.disabled = true;
+            signupButton.textContent = "Creating Account...";
+        });
+    </script>
+</body>
+</html>

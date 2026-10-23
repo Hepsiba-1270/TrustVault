@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrustVault | Audit Trail</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            color: #172033;
+            background: #f2f5fb;
+        }
+
+        header {
+            background: #192957;
+            color: white;
+            padding: 30px 32px;
+        }
+
+        header h1 {
+            margin: 12px 0 20px;
+            font-size: 34px;
+        }
+
+        header p {
+            margin-bottom: 10px;
+            font-size: 17px;
+        }
+
+        nav {
+            background: white;
+            padding: 17px 32px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 28px;
+        }
+
+        nav a {
+            color: #0645d8;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .logout-form {
+            margin-left: auto;
+        }
+
+        .logout-form button,
+        .refresh-button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            background: #192957;
+            color: white;
+            cursor: pointer;
+        }
+
+        .logout-form button:hover,
+        .refresh-button:hover {
+            background: #29417d;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        main {
+            padding: 32px;
+        }
+
+        .card {
+            background: white;
+            padding: 26px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .card h2 {
+            margin-top: 15px;
+            font-size: 25px;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        #auditStatus {
+            margin: 14px 0;
+            color: #475569;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        thead {
+            background: #e1e4e9;
+        }
+
+        th,
+        td {
+            padding: 14px 12px;
+            border-bottom: 1px solid #d9dee7;
+            overflow-wrap: anywhere;
+        }
+
+        th {
+            font-weight: bold;
+        }
+
+        .empty-row {
+            text-align: center;
+            color: #64748b;
+        }
+
+        .action-upload {
+            color: #087443;
+            font-weight: bold;
+        }
+
+        .action-download {
+            color: #174ea6;
+            font-weight: bold;
+        }
+
+        @media (max-width: 650px) {
+            header,
+            main {
+                padding: 20px;
+            }
+
+            nav {
+                padding: 15px 20px;
+                gap: 16px;
+            }
+
+            .logout-form {
+                margin-left: 0;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .toolbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Audit Trail</h1>
+        <p>Review document activity and recorded events.</p>
+    </header>
+
+    <nav>
+        <a th:href="@{/dashboard}">Dashboard</a>
+        <a th:href="@{/documents}">Documents</a>
+        <a th:href="@{/permissions}">Permissions</a>
+        <a th:href="@{/audit}">Audit Logs</a>
+       <a th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">Admin</a>
+
+        <form class="logout-form"
+              th:action="@{/logout}"
+              method="post">
+            <button type="submit">Logout</button>
+        </form>
+    </nav>
+
+    <main>
+        <section class="card">
+
+            <h2>Activity History</h2>
+
+            <p>
+                Track document uploads and downloads recorded by TrustVault.
+            </p>
+
+            <div class="toolbar">
+                <span>Audit records from the database</span>
+
+                <button type="button"
+                        class="refresh-button"
+                        id="refreshButton">
+                    Refresh Logs
+                </button>
+            </div>
+
+            <p id="auditStatus" role="status" aria-live="polite">
+                Loading audit records...
+            </p>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Actor</th>
+                            <th>Action</th>
+                            <th>Document</th>
+                            <th>Result</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="auditRows">
+                        <tr>
+                            <td colspan="6" class="empty-row">
+                                Loading records...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+        const auditRows = document.getElementById("auditRows");
+        const auditStatus = document.getElementById("auditStatus");
+        const refreshButton = document.getElementById("refreshButton");
+
+        function addCell(row, value) {
+            const cell = document.createElement("td");
+
+            cell.textContent =
+                value === null || value === undefined || value === ""
+                    ? "—"
+                    : String(value);
+
+            row.appendChild(cell);
+        }
+
+        function formatTimestamp(value) {
+            if (!value) {
+                return "—";
+            }
+
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) {
+                return String(value);
+            }
+
+            return date.toLocaleString();
+        }
+
+        function renderLogs(logs) {
+            auditRows.replaceChildren();
+
+            if (!Array.isArray(logs)) {
+                throw new Error("Invalid response from audit API.");
+            }
+
+            if (logs.length === 0) {
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+
+                cell.colSpan = 6;
+                cell.className = "empty-row";
+                cell.textContent =
+                    "No audit records yet. Upload and download a test document.";
+
+                row.appendChild(cell);
+                auditRows.appendChild(row);
+
+                auditStatus.textContent = "No audit records found.";
+                return;
+            }
+
+            for (const log of logs) {
+                const row = document.createElement("tr");
+
+                addCell(row, formatTimestamp(log.timestamp));
+                addCell(row, log.username);
+
+                const actionCell = document.createElement("td");
+                const action = String(log.action || "UNKNOWN");
+
+                actionCell.textContent = action;
+
+                if (action === "UPLOAD") {
+                    actionCell.className = "action-upload";
+                } else if (action === "DOWNLOAD") {
+                    actionCell.className = "action-download";
+                }
+
+                row.appendChild(actionCell);
+
+                addCell(row, log.documentName);
+
+                // This result means the event was recorded in the audit log.
+                addCell(row, "Recorded");
+
+                addCell(
+                    row,
+                    log.documentId == null
+                        ? "Document ID unavailable"
+                        : "Document ID: " + log.documentId
+                );
+
+                auditRows.appendChild(row);
+            }
+
+            auditStatus.textContent =
+                "Loaded " + logs.length + " audit record(s).";
+        }
+
+        async function loadAuditLogs() {
+            refreshButton.disabled = true;
+            auditStatus.textContent = "Loading audit records...";
+
+            try {
+                const response = await fetch("/api/audit", {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json"
+                    },
+                    credentials: "same-origin"
+                });
+
+                if (!response.ok) {
+                    throw new Error(
+                        "Unable to load audit logs. HTTP " + response.status
+                    );
+                }
+
+                const logs = await response.json();
+
+                renderLogs(logs);
+
+            } catch (error) {
+                console.error("Audit loading error:", error);
+
+                auditRows.replaceChildren();
+
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+
+                cell.colSpan = 6;
+                cell.className = "empty-row";
+                cell.textContent =
+                    "Unable to load audit records. Check the backend API and login session.";
+
+                row.appendChild(cell);
+                auditRows.appendChild(row);
+
+                auditStatus.textContent = error.message;
+
+            } finally {
+                refreshButton.disabled = false;
+            }
+        }
+
+        refreshButton.addEventListener("click", loadAuditLogs);
+
+        // Load audit records when the page opens.
+        loadAuditLogs();
+    </script>
+
+</body>
+</html>

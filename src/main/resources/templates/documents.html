@@ -1,0 +1,829 @@
+
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrustVault - Documents</title>
+
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            color: #222;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 22px;
+            margin-bottom: 22px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .card h2 {
+            margin-top: 0;
+        }
+
+        input,
+        select,
+        button {
+            padding: 10px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input,
+        select {
+            border: 1px solid #ccc;
+            max-width: 100%;
+        }
+
+        button {
+            border: none;
+            background: #2457c5;
+            color: white;
+            cursor: pointer;
+            margin: 3px;
+        }
+
+        button:hover {
+            background: #173e96;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .secondary {
+            background: #555;
+        }
+
+        .secondary:hover {
+            background: #333;
+        }
+
+        .danger {
+            background: #b42318;
+        }
+
+        .danger:hover {
+            background: #821b13;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .form-row input[type="file"] {
+            flex: 1;
+            min-width: 220px;
+        }
+
+        .message {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+            overflow-wrap: anywhere;
+        }
+
+        .success,
+        .error,
+        .info {
+            display: block;
+        }
+
+        .success {
+            color: #166534;
+            background: #dcfce7;
+        }
+
+        .error {
+            color: #991b1b;
+            background: #fee2e2;
+        }
+
+        .info {
+            color: #1e40af;
+            background: #dbeafe;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #f8fafc;
+        }
+
+        .empty {
+            color: #666;
+            padding: 16px 0;
+        }
+
+        .account-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .permission {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+
+            .card {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>TrustVault Documents</h1>
+
+    <p class="subtitle">
+        Secure document storage, sharing and access management.
+    </p>
+
+    <!-- Only OWNER and ADMIN can see the upload section. -->
+    <section class="card"
+             sec:authorize="hasAnyRole('OWNER', 'ADMIN')">
+
+        <h2>Upload Document</h2>
+
+        <form id="uploadForm">
+            <div class="form-row">
+                <input
+                    type="file"
+                    id="fileInput"
+                    accept=".pdf,.txt,.png,.jpg,.jpeg"
+                    required
+                >
+
+                <button type="submit" id="uploadButton">
+                    Upload
+                </button>
+            </div>
+        </form>
+
+        <p>
+            Allowed formats: PDF, TXT, PNG, JPG, JPEG.
+            Maximum file size: 10 MB.
+        </p>
+
+        <div id="uploadMessage" class="message"></div>
+    </section>
+
+    <!-- Search Documents -->
+    <section class="card">
+        <h2>Search Documents</h2>
+
+        <div class="form-row">
+            <input
+                type="text"
+                id="searchInput"
+                placeholder="Search by document name..."
+            >
+
+            <button type="button" id="searchButton">
+                Search
+            </button>
+
+            <button
+                type="button"
+                id="refreshButton"
+                class="secondary">
+                Refresh
+            </button>
+        </div>
+    </section>
+
+    <!-- My Documents -->
+    <section class="card">
+        <h2>My Documents</h2>
+
+        <div id="ownMessage" class="message"></div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                <tr>
+                    <th>Document Name</th>
+                    <th>Original Filename</th>
+                    <th>Size</th>
+                    <th>Uploaded At</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+
+                <tbody id="ownRows"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Show shared documents to users other than OWNER. -->
+    <section class="card" sec:authorize="!hasRole('OWNER')">
+        <h2>Shared With Me</h2>
+
+        <p>
+            Documents other users have shared with your account.
+        </p>
+
+        <div id="sharedMessage" class="message"></div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                <tr>
+                    <th>Document Name</th>
+                    <th>Original Filename</th>
+                    <th>Owner</th>
+                    <th>Size</th>
+                    <th>Permission</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+
+                <tbody id="sharedRows"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Account Information and Logout -->
+    <section class="card">
+        <div class="account-info">
+            <div>
+                <h2>Account</h2>
+                <p>
+                    Signed in as:
+                    <strong sec:authentication="name"></strong>
+                </p>
+            </div>
+
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" class="danger">
+                    Logout
+                </button>
+            </form>
+        </div>
+    </section>
+
+</div>
+
+<script>
+    "use strict";
+
+    // Find upload elements only when the upload section is rendered.
+    const uploadForm = document.getElementById("uploadForm");
+    const fileInput = document.getElementById("fileInput");
+    const uploadButton = document.getElementById("uploadButton");
+    const uploadMessage = document.getElementById("uploadMessage");
+
+    const searchInput = document.getElementById("searchInput");
+    const searchButton = document.getElementById("searchButton");
+    const refreshButton = document.getElementById("refreshButton");
+
+    const ownRows = document.getElementById("ownRows");
+    const ownMessage = document.getElementById("ownMessage");
+
+    // These elements are absent for OWNER accounts.
+    const sharedRows = document.getElementById("sharedRows");
+    const sharedMessage = document.getElementById("sharedMessage");
+
+    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+    const ALLOWED_TYPES = new Set([
+        "application/pdf",
+        "text/plain",
+        "image/png",
+        "image/jpeg"
+    ]);
+
+    const ALLOWED_EXTENSIONS = /\.(pdf|txt|png|jpe?g)$/i;
+
+    let ownDocuments = [];
+    let sharedDocuments = [];
+
+    function showMessage(element, message, type) {
+        if (!element) return;
+
+        element.textContent = message;
+        element.className = "message " + type;
+    }
+
+    function clearMessage(element) {
+        if (!element) return;
+
+        element.textContent = "";
+        element.className = "message";
+    }
+
+    function formatSize(bytes) {
+        const size = Number(bytes) || 0;
+
+        if (size < 1024) return size + " B";
+
+        if (size < 1024 * 1024) {
+            return (size / 1024).toFixed(1) + " KB";
+        }
+
+        return (size / (1024 * 1024)).toFixed(2) + " MB";
+    }
+
+    function formatDate(value) {
+        if (!value) return "-";
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return String(value);
+        }
+
+        return date.toLocaleString();
+    }
+
+    function createCell(value) {
+        const cell = document.createElement("td");
+
+        cell.textContent =
+            value === null || value === undefined || value === ""
+                ? "-"
+                : String(value);
+
+        return cell;
+    }
+
+    function createButton(label, className, onClick) {
+        const button = document.createElement("button");
+
+        button.type = "button";
+        button.textContent = label;
+
+        if (className) {
+            button.className = className;
+        }
+
+        button.addEventListener("click", onClick);
+
+        return button;
+    }
+
+    function createActionCell() {
+        return document.createElement("td");
+    }
+
+    function getSearchTerm() {
+        return searchInput.value.trim().toLowerCase();
+    }
+
+    function matchesSearch(doc) {
+        const term = getSearchTerm();
+
+        if (!term) return true;
+
+        const name = String(doc.name || "").toLowerCase();
+        const filename = String(
+            doc.originalFilename || ""
+        ).toLowerCase();
+
+        return name.includes(term) || filename.includes(term);
+    }
+
+    // Create a view button for a document.
+    function addViewButton(actions, doc) {
+        actions.appendChild(
+            createButton("View", "", function () {
+                window.open(
+                    "/api/documents/" +
+                    encodeURIComponent(doc.id) +
+                    "/view",
+                    "_blank",
+                    "noopener"
+                );
+            })
+        );
+    }
+
+    // Create a download button for a document.
+    function addDownloadButton(actions, doc) {
+        actions.appendChild(
+            createButton("Download", "secondary", function () {
+                window.location.href =
+                    "/api/documents/" +
+                    encodeURIComponent(doc.id) +
+                    "/download";
+            })
+        );
+    }
+
+    // Render documents owned by the logged-in user.
+    function renderOwnDocuments() {
+        ownRows.replaceChildren();
+
+        const filteredDocuments = ownDocuments.filter(matchesSearch);
+
+        if (filteredDocuments.length === 0) {
+            const row = document.createElement("tr");
+            const cell = document.createElement("td");
+
+            cell.colSpan = 5;
+            cell.className = "empty";
+            cell.textContent = ownDocuments.length === 0
+                ? "You have not uploaded any documents yet."
+                : "No documents match your search.";
+
+            row.appendChild(cell);
+            ownRows.appendChild(row);
+            return;
+        }
+
+        for (const doc of filteredDocuments) {
+            const row = document.createElement("tr");
+
+            row.appendChild(createCell(doc.name));
+            row.appendChild(createCell(doc.originalFilename));
+            row.appendChild(createCell(formatSize(doc.size)));
+            row.appendChild(createCell(formatDate(doc.uploadedAt)));
+
+            const actions = createActionCell();
+
+            addViewButton(actions, doc);
+            addDownloadButton(actions, doc);
+
+            row.appendChild(actions);
+            ownRows.appendChild(row);
+        }
+    }
+
+    // Render documents shared with the logged-in user.
+    function renderSharedDocuments() {
+        if (!sharedRows || !sharedMessage) return;
+
+        sharedRows.replaceChildren();
+
+        const filteredDocuments = sharedDocuments.filter(matchesSearch);
+
+        if (filteredDocuments.length === 0) {
+            const row = document.createElement("tr");
+            const cell = document.createElement("td");
+
+            cell.colSpan = 6;
+            cell.className = "empty";
+            cell.textContent = sharedDocuments.length === 0
+                ? "No documents have been shared with you."
+                : "No shared documents match your search.";
+
+            row.appendChild(cell);
+            sharedRows.appendChild(row);
+            return;
+        }
+
+        for (const doc of filteredDocuments) {
+            const row = document.createElement("tr");
+
+            row.appendChild(createCell(doc.name));
+            row.appendChild(createCell(doc.originalFilename));
+            row.appendChild(createCell(doc.ownerUsername));
+            row.appendChild(createCell(formatSize(doc.size)));
+
+            const permissionType =
+                String(doc.permissionType || "").toUpperCase();
+
+            const permissionCell = createCell("");
+            const permissionBadge = document.createElement("span");
+
+            permissionBadge.className = "permission";
+            permissionBadge.textContent = permissionType || "UNKNOWN";
+
+            permissionCell.appendChild(permissionBadge);
+            row.appendChild(permissionCell);
+
+            const actions = createActionCell();
+
+            // VIEW and DOWNLOAD permissions both allow viewing.
+            if (
+                permissionType === "VIEW" ||
+                permissionType === "DOWNLOAD"
+            ) {
+                addViewButton(actions, doc);
+            }
+
+            // Only DOWNLOAD permission allows downloading.
+            if (permissionType === "DOWNLOAD") {
+                addDownloadButton(actions, doc);
+            }
+
+            row.appendChild(actions);
+            sharedRows.appendChild(row);
+        }
+    }
+
+    async function fetchDocumentList(url) {
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            },
+            credentials: "same-origin"
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error(
+                    "Session expired. Please log in again."
+                );
+            }
+
+            if (response.status === 403) {
+                throw new Error(
+                    "You do not have permission to access these documents."
+                );
+            }
+
+            throw new Error(
+                "Could not load documents. HTTP " + response.status
+            );
+        }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+            throw new Error(
+                "Unexpected response received from the server."
+            );
+        }
+
+        return data;
+    }
+
+    async function loadDocuments() {
+        refreshButton.disabled = true;
+
+        clearMessage(ownMessage);
+        showMessage(
+            ownMessage,
+            "Loading your documents...",
+            "info"
+        );
+
+        if (sharedMessage) {
+            clearMessage(sharedMessage);
+            showMessage(
+                sharedMessage,
+                "Loading shared documents...",
+                "info"
+            );
+        }
+
+        try {
+            try {
+                ownDocuments = await fetchDocumentList("/api/documents");
+                renderOwnDocuments();
+                clearMessage(ownMessage);
+            } catch (error) {
+                ownDocuments = [];
+                renderOwnDocuments();
+
+                showMessage(
+                    ownMessage,
+                    error.message || "Failed to load your documents.",
+                    "error"
+                );
+            }
+
+            // Do not request the shared list when that section is absent.
+            if (sharedRows && sharedMessage) {
+                try {
+                    const result = await fetchDocumentList(
+                        "/api/documents/shared-with-me"
+                    );
+
+                    const ownedIds = new Set(
+                        ownDocuments.map(function (doc) {
+                            return String(doc.id);
+                        })
+                    );
+
+                    sharedDocuments = result.filter(function (doc) {
+                        return !ownedIds.has(String(doc.id));
+                    });
+
+                    renderSharedDocuments();
+                    clearMessage(sharedMessage);
+                } catch (error) {
+                    sharedDocuments = [];
+                    renderSharedDocuments();
+
+                    showMessage(
+                        sharedMessage,
+                        error.message || "Failed to load shared documents.",
+                        "error"
+                    );
+                }
+            } else {
+                sharedDocuments = [];
+            }
+        } finally {
+            refreshButton.disabled = false;
+        }
+    }
+
+    // Register upload behavior only when the upload form exists.
+    if (uploadForm && fileInput && uploadButton && uploadMessage) {
+        uploadForm.addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            clearMessage(uploadMessage);
+
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showMessage(
+                    uploadMessage,
+                    "Please select a file.",
+                    "error"
+                );
+                return;
+            }
+
+            if (file.size > MAX_FILE_SIZE) {
+                showMessage(
+                    uploadMessage,
+                    "File size must not exceed 10 MB.",
+                    "error"
+                );
+                return;
+            }
+
+            if (!ALLOWED_EXTENSIONS.test(file.name)) {
+                showMessage(
+                    uploadMessage,
+                    "Only PDF, TXT, PNG, JPG and JPEG files are allowed.",
+                    "error"
+                );
+                return;
+            }
+
+            if (file.type && !ALLOWED_TYPES.has(file.type)) {
+                showMessage(
+                    uploadMessage,
+                    "Unsupported file type. Please select PDF, TXT, PNG, JPG or JPEG.",
+                    "error"
+                );
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const csrfTokenElement = document.querySelector(
+                'meta[name="_csrf"]'
+            );
+
+            const csrfHeaderElement = document.querySelector(
+                'meta[name="_csrf_header"]'
+            );
+
+            const headers = {
+                "Accept": "application/json"
+            };
+
+            if (csrfTokenElement && csrfHeaderElement) {
+                headers[csrfHeaderElement.content] =
+                    csrfTokenElement.content;
+            }
+
+            uploadButton.disabled = true;
+
+            showMessage(
+                uploadMessage,
+                "Uploading document...",
+                "info"
+            );
+
+            try {
+                const response = await fetch("/api/documents/upload", {
+                    method: "POST",
+                    headers: headers,
+                    body: formData,
+                    credentials: "same-origin"
+                });
+
+                if (!response.ok) {
+                    let errorMessage =
+                        "Upload failed. HTTP " + response.status;
+
+                    try {
+                        const errorData = await response.json();
+
+                        if (errorData.message) {
+                            errorMessage = errorData.message;
+                        } else if (errorData.error) {
+                            errorMessage = errorData.error;
+                        }
+                    } catch (ignored) {
+                        // Keep the default message for non-JSON responses.
+                    }
+
+                    throw new Error(errorMessage);
+                }
+
+                fileInput.value = "";
+
+                showMessage(
+                    uploadMessage,
+                    "Document uploaded successfully.",
+                    "success"
+                );
+
+                await loadDocuments();
+            } catch (error) {
+                showMessage(
+                    uploadMessage,
+                    error.message || "An error occurred while uploading.",
+                    "error"
+                );
+            } finally {
+                uploadButton.disabled = false;
+            }
+        });
+    }
+
+    searchButton.addEventListener("click", function () {
+        renderOwnDocuments();
+        renderSharedDocuments();
+    });
+
+    searchInput.addEventListener("input", function () {
+        renderOwnDocuments();
+        renderSharedDocuments();
+    });
+
+    refreshButton.addEventListener("click", loadDocuments);
+
+    // Load document lists when the page opens.
+    loadDocuments();
+</script>
+
+</body>
+</html>
