@@ -3,6 +3,7 @@ package com.trustvault.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Entity
 @Table(name = "documents")
@@ -33,6 +34,9 @@ public class Document {
     @Column(nullable = false)
     private LocalDateTime uploadedAt;
 
+    @Column(nullable = false, length = 10)
+    private String visibility = "PRIVATE";
+
     public Document() {
     }
 
@@ -41,39 +45,108 @@ public class Document {
         if (uploadedAt == null) {
             uploadedAt = LocalDateTime.now();
         }
+
+        if (visibility == null || visibility.isBlank()) {
+            visibility = "PRIVATE";
+        }
+
+        visibility = visibility.trim().toUpperCase(Locale.ROOT);
+        validateVisibility(visibility);
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    @PreUpdate
+    public void beforeUpdate() {
+        if (visibility == null || visibility.isBlank()) {
+            visibility = "PRIVATE";
+        }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+        visibility = visibility.trim().toUpperCase(Locale.ROOT);
+        validateVisibility(visibility);
+    }
 
-    public String getOriginalFilename() { return originalFilename; }
+    private void validateVisibility(String value) {
+        if (!"PUBLIC".equals(value) && !"PRIVATE".equals(value)) {
+            throw new IllegalArgumentException(
+                    "Visibility must be PUBLIC or PRIVATE.");
+        }
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getOriginalFilename() {
+        return originalFilename;
+    }
+
     public void setOriginalFilename(String originalFilename) {
         this.originalFilename = originalFilename;
     }
 
-    public String getStorageFilename() { return storageFilename; }
+    public String getStorageFilename() {
+        return storageFilename;
+    }
+
     public void setStorageFilename(String storageFilename) {
         this.storageFilename = storageFilename;
     }
 
-    public String getContentType() { return contentType; }
+    public String getContentType() {
+        return contentType;
+    }
+
     public void setContentType(String contentType) {
         this.contentType = contentType;
     }
 
-    public Long getSize() { return size; }
-    public void setSize(Long size) { this.size = size; }
+    public Long getSize() {
+        return size;
+    }
 
-    public String getOwnerUsername() { return ownerUsername; }
+    public void setSize(Long size) {
+        this.size = size;
+    }
+
+    public String getOwnerUsername() {
+        return ownerUsername;
+    }
+
     public void setOwnerUsername(String ownerUsername) {
         this.ownerUsername = ownerUsername;
     }
 
-    public LocalDateTime getUploadedAt() { return uploadedAt; }
+    public LocalDateTime getUploadedAt() {
+        return uploadedAt;
+    }
+
     public void setUploadedAt(LocalDateTime uploadedAt) {
         this.uploadedAt = uploadedAt;
+    }
+
+    public String getVisibility() {
+        return visibility;
+    }
+
+    public void setVisibility(String visibility) {
+        if (visibility == null || visibility.isBlank()) {
+            this.visibility = "PRIVATE";
+            return;
+        }
+
+        String normalized = visibility.trim().toUpperCase(Locale.ROOT);
+        validateVisibility(normalized);
+        this.visibility = normalized;
     }
 }

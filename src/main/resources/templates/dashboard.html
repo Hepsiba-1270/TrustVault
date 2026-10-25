@@ -1,391 +1,344 @@
 
 <!DOCTYPE html>
-<html lang="en"
-      xmlns:th="http://www.thymeleaf.org"
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrustVault | Dashboard</title>
+
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+
+    <title>TrustVault | Secure Document Sharing</title>
 
     <style>
         * {
             box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-            scroll-padding-top: 65px;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            background: #07152e;
-            color: #ffffff;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #071426;
+            color: white;
+            min-height: 100vh;
         }
 
-        /* Navigation */
         nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            min-height: 62px;
-            padding: 18px 25px;
-            background: rgba(7, 20, 48, 0.88);
-            backdrop-filter: blur(12px);
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
+            min-height: 76px;
+            padding: 15px 5%;
             display: flex;
             align-items: center;
-            flex-wrap: wrap;
+            justify-content: space-between;
             gap: 20px;
-        }
-
-        nav a {
-            color: #ffffff;
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.25s ease;
-        }
-
-        nav a:hover {
-            color: #67d5ff;
+            background: rgba(7, 20, 38, 0.95);
+            border-bottom: 1px solid rgba(255,255,255,.1);
+            position: relative;
+            z-index: 10;
         }
 
         .brand {
-            font-size: 20px;
-            font-weight: bold;
-            color: #67d5ff;
-            margin-right: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            text-decoration: none;
+            font-size: 24px;
+            font-weight: 750;
+            letter-spacing: .4px;
         }
 
-        /* Profile menu */
-        .profile-menu {
-            position: fixed;
-            top: 10px;
-            right: 20px;
-            z-index: 1100;
+        .brand-icon {
+            color: #67e8f9;
+            font-size: 29px;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-actions > a {
+            color: #e2e8f0;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .nav-actions > a:hover {
+            color: #67e8f9;
+        }
+
+        .profile-wrap {
+            position: relative;
         }
 
         .profile-button {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            border: 2px solid white;
-            background: #2458a6;
+            background: #172a45;
             color: white;
-            font-size: 21px;
+            border: 1px solid #36516f;
+            border-radius: 10px;
+            padding: 10px 14px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        .profile-button:hover {
-            background: #173f80;
-        }
-
-        .profile-details {
+        .profile-menu {
             display: none;
             position: absolute;
-            top: 50px;
             right: 0;
-            width: 240px;
-            padding: 18px;
-            background: #ffffff;
-            border: 1px solid #dbe5f5;
-            border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
-            color: #26364a;
+            top: 48px;
+            width: 260px;
+            max-width: calc(100vw - 30px);
+            background: #10233c;
+            border: 1px solid #334b68;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 15px 40px #0007;
         }
 
-        .profile-details.show {
+        .profile-menu.open {
             display: block;
         }
 
-        .profile-details p {
-            margin: 14px 0;
+        .profile-menu p {
+            padding: 8px;
+            color: #cbd5e1;
             overflow-wrap: anywhere;
         }
 
-        .profile-role {
-            display: inline-block;
-            background: #eaf0ff;
-            color: #2458a6;
-            padding: 5px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
+        .profile-menu a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 10px;
+            border-radius: 7px;
         }
 
-        .logout-button {
+        .profile-menu a:hover {
+            background: #1e3a5f;
+        }
+
+        .menu-button {
+            display: block;
             width: 100%;
             padding: 10px;
-            background: #b42318;
+            border: 0;
+            border-radius: 7px;
+            background: #164e63;
             color: white;
-            border: none;
-            border-radius: 6px;
+            text-align: left;
             cursor: pointer;
+            margin-bottom: 8px;
+            font-size: 14px;
         }
 
-        .logout-button:hover {
-            background: #8f1d14;
+        .menu-button:hover {
+            background: #155e75;
         }
 
-        /* Full-screen hero */
+        .menu-button:disabled {
+            opacity: .6;
+            cursor: wait;
+        }
+
+        .recovery-result {
+            display: none;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #071426;
+            border: 1px solid #36516f;
+            border-radius: 8px;
+            overflow-wrap: anywhere;
+        }
+
+        .recovery-message {
+            padding: 4px 0;
+            color: #a5f3fc;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .recovery-code {
+            display: block;
+            padding: 10px 0;
+            color: white;
+            font-size: 13px;
+            overflow-wrap: anywhere;
+            user-select: text;
+        }
+
+        .copy-button {
+            padding: 8px 12px;
+            background: #06b6d4;
+            border: 0;
+            border-radius: 6px;
+            color: #062033;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
         .hero {
-            min-height: 100vh;
-            min-height: 100svh;
-            background:
-                linear-gradient(
-                    90deg,
-                    rgba(3, 15, 39, 0.88),
-                    rgba(3, 15, 39, 0.30)
-                ),
-                url('/images/hero.jpg') center/cover no-repeat;
+            min-height: calc(100vh - 76px);
             display: flex;
             align-items: center;
-            padding: 120px 8%;
-          
-            color: white;
-            position: relative;
+            justify-content: center;
+            text-align: center;
+            padding: 70px 22px;
+            background:
+                linear-gradient(115deg, rgba(3, 12, 27, .94),
+                rgba(7, 32, 60, .78), rgba(8, 47, 73, .64)),
+                url('/images/hero.jpg') center/cover no-repeat;
         }
 
         .hero-content {
-            max-width: 700px;
+            max-width: 850px;
+            animation: appear .8s ease both;
         }
 
         .eyebrow {
-            color: #67d5ff;
-            font-size: 14px;
-            font-weight: bold;
-            letter-spacing: 4px;
-            text-transform: uppercase;
+            display: inline-block;
+            padding: 9px 15px;
+            border: 1px solid #38bdf8;
+            border-radius: 30px;
+            color: #a5f3fc;
+            background: rgba(14, 116, 144, .18);
+            font-size: 13px;
+            letter-spacing: 1px;
+            margin-bottom: 25px;
         }
 
         .hero h1 {
-            font-size: clamp(46px, 7vw, 82px);
-            margin: 15px 0;
-            line-height: 1.1;
+            font-size: clamp(42px, 7vw, 76px);
+            line-height: 1.08;
+            margin-bottom: 24px;
+            letter-spacing: -1.5px;
         }
 
         .hero h1 span {
-            color: #45c8ff;
+            color: #67e8f9;
         }
 
         .hero p {
-            font-size: clamp(16px, 2vw, 21px);
-            line-height: 1.7;
-            max-width: 620px;
-        }
-
-        /* Buttons */
-        .action-button {
-            display: inline-block;
-            margin-top: 18px;
-            padding: 13px 24px;
-            border: none;
-            border-radius: 8px;
-            background: linear-gradient(135deg, #168cff, #4559ef);
-            color: white;
-            font-size: 15px;
-            font-weight: bold;
-            text-decoration: none;
-            cursor: pointer;
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-        }
-
-        .action-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 22px rgba(35, 135, 255, 0.35);
-        }
-
-        .scroll-hint {
-            position: absolute;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #ffffff;
-            text-align: center;
-            font-size: 13px;
-            opacity: 0.85;
-        }
-
-        .scroll-hint span {
-            display: block;
-            font-size: 25px;
-            margin-top: 5px;
-        }
-
-        /* Full-screen feature sections */
-        .feature {
-            min-height: 100vh;
-            min-height: 100svh;
-            display: flex;
-            align-items: center;
-            padding: 100px 8%;
-            position: relative;
-            overflow: hidden;
-            color: white;
-            background-color: #0b1c3b;
-            background-position: center;
-            background-size: cover;
-            background-repeat: no-repeat;
-            isolation: isolate;
-        }
-
-        .feature::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                90deg,
-                rgba(3, 15, 37, 0.94) 0%,
-                rgba(3, 15, 37, 0.78) 48%,
-                rgba(3, 15, 37, 0.25) 100%
-            );
-            z-index: -1;
-        }
-
-        .feature-content {
-            max-width: 620px;
-        }
-
-        .documents {
-            background-image: url('/images/documents.jpg');
-        }
-
-        .permissions {
-            background-image: url('/images/permissions.jpg');
-        }
-
-        .audit {
-            background-image: url('/images/audit.jpg');
-        }
-
-        .admin-feature {
-            background-image: url('/images/hero.jpg');
-        }
-
-        .feature-label {
-            display: inline-block;
-            padding: 8px 13px;
-            background: rgba(36, 137, 255, 0.20);
-            border: 1px solid rgba(103, 213, 255, 0.45);
-            border-radius: 20px;
-            color: #91e3ff;
-            font-size: 12px;
-            letter-spacing: 2px;
-            font-weight: bold;
-        }
-
-        .feature h2 {
-            font-size: clamp(36px, 5vw, 58px);
-            margin: 22px 0 15px;
-        }
-
-        .feature p {
+            max-width: 680px;
+            margin: 0 auto;
+            color: #d2deeb;
             font-size: 18px;
             line-height: 1.8;
-            color: #e0eaff;
         }
 
-        .feature ul {
-            list-style: none;
-            padding: 0;
-            margin: 25px 0;
+        .hero-buttons {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 35px;
         }
 
-        .feature li {
-            margin: 16px 0;
-            font-size: 16px;
-            color: #edf5ff;
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 49px;
+            padding: 14px 24px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 650;
+            transition: transform .2s, background .2s;
         }
 
-        .feature li::before {
+        .btn:hover {
+            transform: translateY(-3px);
+        }
+
+        .btn-primary {
+            background: #06b6d4;
+            color: #062033;
+            box-shadow: 0 8px 28px #06b6d433;
+        }
+
+        .btn-primary:hover {
+            background: #67e8f9;
+        }
+
+        .btn-secondary {
+            color: white;
+            border: 1px solid #7892ad;
+            background: rgba(255,255,255,.05);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,.12);
+        }
+
+        .highlights {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 22px;
+            margin-top: 48px;
+            color: #dbeafe;
+            font-size: 14px;
+        }
+
+        .highlights span::before {
             content: "✓";
-            color: #55ddff;
+            color: #67e8f9;
             font-weight: bold;
-            margin-right: 12px;
+            margin-right: 7px;
         }
 
-        /* Scroll reveal animation */
-        .reveal {
-            opacity: 0;
-            transform: translateY(45px);
-            transition: opacity 0.8s ease, transform 0.8s ease;
-        }
-
-        .reveal.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Footer */
         footer {
-            padding: 25px;
+            padding: 20px;
             text-align: center;
-            background: #061127;
-            color: #b9c8e4;
+            background: #06101f;
+            color: #91a4ba;
             font-size: 13px;
         }
 
-        /* Responsive layout */
+        @keyframes appear {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         @media (max-width: 700px) {
             nav {
-                padding: 14px 12px;
-                padding-right: 60px;
-                gap: 12px;
+                align-items: flex-start;
+                flex-wrap: wrap;
+                padding: 15px 18px;
             }
 
             .brand {
+                font-size: 21px;
+            }
+
+            .nav-actions {
                 width: 100%;
-                margin-right: 0;
-            }
-
-            nav a {
-                font-size: 12px;
-            }
-
-            .profile-menu {
-                top: 10px;
-                right: 12px;
+                justify-content: space-between;
+                gap: 10px;
+                flex-wrap: wrap;
             }
 
             .hero {
-                padding: 100px 25px 75px;
+                min-height: calc(100vh - 125px);
+                padding: 55px 20px;
             }
 
-            .feature {
-                padding: 90px 25px;
-            }
-
-            .feature::before {
-                background: rgba(3, 15, 37, 0.80);
-            }
-
-            .feature p {
+            .hero p {
                 font-size: 16px;
             }
-        }
 
-        @media (prefers-reduced-motion: reduce) {
-            html {
-                scroll-behavior: auto;
-            }
-
-            .reveal {
-                opacity: 1;
-                transform: none;
-                transition: none;
-            }
-
-            * {
-                animation-duration: 0.01ms !important;
-                transition-duration: 0.01ms !important;
+            .highlights {
+                gap: 14px;
+                flex-direction: column;
+                align-items: center;
             }
         }
     </style>
@@ -393,256 +346,235 @@
 
 <body>
 
-    <!-- Profile menu -->
-    <div class="profile-menu">
-        <button type="button"
-                class="profile-button"
-                id="profileButton"
-                aria-label="View profile details"
-                aria-expanded="false"
-                aria-controls="profileDetails">
-            &#128100;
-        </button>
+<nav>
+    <a class="brand" th:href="@{/dashboard}">
+        <span class="brand-icon">⬡</span>
+        <span>TrustVault</span>
+    </a>
 
-        <div class="profile-details"
-             id="profileDetails"
-             aria-hidden="true">
+    <div class="nav-actions">
+        <a th:href="@{/dashboard}">Home</a>
+        <a th:href="@{/features}">Explore Features</a>
 
-            <strong>My Profile</strong>
+        <div class="profile-wrap">
+            <button class="profile-button"
+                    id="profileButton"
+                    type="button"
+                    aria-expanded="false">
+                👤 Profile ▾
+            </button>
 
-            <p>
-                Username:
-                <span sec:authentication="name"></span>
-            </p>
+            <div class="profile-menu" id="profileMenu">
+                <p>
+                    Signed in as
+                    <strong sec:authentication="name">User</strong>
+                </p>
 
-            <p>
-                Role:
-                <span class="profile-role"
-                      sec:authorize="hasRole('ADMIN')">ADMIN</span>
+                <a th:href="@{/documents}">My Documents</a>
 
-                <span class="profile-role"
-                      sec:authorize="hasRole('OWNER')">OWNER</span>
-
-                <span class="profile-role"
-                      sec:authorize="hasRole('VIEWER')">VIEWER</span>
-            </p>
-
-            <form th:action="@{/logout}" method="post">
-                <button class="logout-button" type="submit">
-                    Logout
+                <button type="button"
+                        class="menu-button"
+                        id="generateRecoveryCodeBtn">
+                    🔑 Generate Recovery Code
                 </button>
-            </form>
+
+                <div class="recovery-result" id="recoveryCodeResult"
+                     aria-live="polite">
+                    <p class="recovery-message" id="recoveryCodeMessage"></p>
+
+                    <strong class="recovery-code"
+                            id="recoveryCodeValue"></strong>
+
+                    <button type="button"
+                            class="copy-button"
+                            id="copyRecoveryCodeBtn"
+                            style="display:none;">
+                        Copy Code
+                    </button>
+                </div>
+
+                <form th:action="@{/logout}" method="post">
+                    <input type="hidden"
+                           th:name="${_csrf.parameterName}"
+                           th:value="${_csrf.token}">
+
+                    <button type="submit"
+                            style="width:100%;padding:10px;border:0;
+                                   border-radius:7px;background:#164e63;
+                                   color:white;text-align:left;cursor:pointer;">
+                        Logout
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
+</nav>
 
-    <!-- Main navigation -->
-    <nav>
-        <a class="brand" th:href="@{/dashboard}">TrustVault</a>
+<main class="hero">
+    <div class="hero-content">
+        <div class="eyebrow">SECURE • SMART • TRANSPARENT</div>
 
-        <a th:href="@{/dashboard}">Dashboard</a>
-        <a th:href="@{/documents}">Documents</a>
-        <a th:href="@{/permissions}">Permissions</a>
-        <a th:href="@{/audit}">Audit Logs</a>
+        <h1>
+            Welcome to <span>TrustVault</span>
+        </h1>
 
-        <!-- Only ADMIN can see this link -->
-        <a th:href="@{/admin}"
-           sec:authorize="hasRole('ADMIN')">
-            Admin
-        </a>
-    </nav>
+        <p>
+            A secure document-sharing workspace designed to protect your files,
+            manage access permissions, and maintain a transparent audit trail
+            of document activities.
+        </p>
 
-    <main>
+        <div class="hero-buttons">
+            <a th:href="@{/features}" class="btn btn-primary">
+                Explore Features&nbsp; →
+            </a>
 
-        <!-- Hero section -->
-        <section class="hero" id="home">
-            <div class="hero-content reveal">
-                <div class="eyebrow">Welcome to</div>
+            <a th:href="@{/documents}" class="btn btn-secondary">
+                Open My Documents
+            </a>
+        </div>
 
-                <h1>Trust<span>Vault</span></h1>
+        <div class="highlights">
+            <span>Controlled document access</span>
+            <span>Permission-based sharing</span>
+            <span>Auditable activities</span>
+        </div>
+    </div>
+</main>
 
-                <p>
-                    Secure Document Sharing with a Real Audit Trail.
-                    Manage your documents, control access and keep track
-                    of every activity in one place.
-                </p>
+<footer>
+    © 2026 TrustVault · Secure Document Sharing with a Real Audit Trail
+</footer>
 
-                <a class="action-button" href="#documents">
-                    Explore Features &nbsp; ↓
-                </a>
-            </div>
+<script>
+    // Profile dropdown functionality.
+    const profileButton = document.getElementById("profileButton");
+    const profileMenu = document.getElementById("profileMenu");
 
-            <div class="scroll-hint">
-                Scroll to explore
-                <span>↓</span>
-            </div>
-        </section>
+    profileButton.addEventListener("click", function (event) {
+        event.stopPropagation();
 
-        <!-- Documents section -->
-        <section class="feature documents" id="documents">
-            <div class="feature-content reveal">
-                <span class="feature-label">01 / DOCUMENT MANAGEMENT</span>
+        const isOpen = profileMenu.classList.toggle("open");
+        profileButton.setAttribute("aria-expanded", String(isOpen));
+    });
 
-                <h2>Documents</h2>
-
-                <p>
-                    Upload, organize, search and securely manage your
-                    important documents from one place.
-                </p>
-
-                <ul>
-                    <li>Secure private file storage</li>
-                    <li>Easy document search</li>
-                    <li>Owner-controlled uploads</li>
-                    <li>View and download based on permissions</li>
-                </ul>
-
-                <a class="action-button" th:href="@{/documents}">
-                    Open Documents &nbsp; →
-                </a>
-            </div>
-        </section>
-
-        <!-- Permissions section -->
-        <section class="feature permissions" id="permissions">
-            <div class="feature-content reveal">
-                <span class="feature-label">02 / ACCESS CONTROL</span>
-
-                <h2>Permissions</h2>
-
-                <p>
-                    Share documents with trusted users and decide
-                    exactly how they can access your files.
-                </p>
-
-                <ul>
-                    <li>Grant VIEW permission</li>
-                    <li>Grant DOWNLOAD permission</li>
-                    <li>Revoke access when required</li>
-                    <li>Control access to shared documents</li>
-                </ul>
-
-                <a class="action-button" th:href="@{/permissions}">
-                    Manage Permissions &nbsp; →
-                </a>
-            </div>
-        </section>
-
-        <!-- Audit trail section -->
-        <section class="feature audit" id="audit">
-            <div class="feature-content reveal">
-                <span class="feature-label">03 / ACTIVITY MONITORING</span>
-
-                <h2>Audit Trail</h2>
-
-                <p>
-                    Track document activity and review recorded events
-                    to improve transparency and security.
-                </p>
-
-                <ul>
-                    <li>Document upload records</li>
-                    <li>Document view activity</li>
-                    <li>Download activity</li>
-                    <li>Review access and security events</li>
-                </ul>
-
-                <a class="action-button" th:href="@{/audit}">
-                    View Audit Logs &nbsp; →
-                </a>
-            </div>
-        </section>
-
-        <!-- Admin section: visible only to ADMIN -->
-        <section class="feature admin-feature"
-                 id="administration"
-                 sec:authorize="hasRole('ADMIN')">
-
-            <div class="feature-content reveal">
-                <span class="feature-label">04 / SYSTEM MANAGEMENT</span>
-
-                <h2>Administration</h2>
-
-                <p>
-                    Manage users and roles, and review system activity
-                    through the administration panel.
-                </p>
-
-                <ul>
-                    <li>Manage user accounts</li>
-                    <li>Assign and update user roles</li>
-                    <li>Review system activity</li>
-                    <li>Monitor security and audit records</li>
-                </ul>
-
-                <a class="action-button" th:href="@{/admin}">
-                    Open Admin Panel &nbsp; →
-                </a>
-            </div>
-        </section>
-
-    </main>
-
-    <footer>
-        <p>© 2026 TrustVault | Secure Document Sharing with a Real Audit Trail</p>
-    </footer>
-
-    <script>
-        // Profile menu controls
-        const profileButton = document.getElementById("profileButton");
-        const profileDetails = document.getElementById("profileDetails");
-
-        function closeProfileMenu() {
-            profileDetails.classList.remove("show");
+    document.addEventListener("click", function (event) {
+        if (!profileMenu.contains(event.target)
+                && !profileButton.contains(event.target)) {
+            profileMenu.classList.remove("open");
             profileButton.setAttribute("aria-expanded", "false");
-            profileDetails.setAttribute("aria-hidden", "true");
+        }
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+            profileMenu.classList.remove("open");
+            profileButton.setAttribute("aria-expanded", "false");
+        }
+    });
+
+    // Recovery code functionality.
+    const generateCodeButton =
+        document.getElementById("generateRecoveryCodeBtn");
+
+    const recoveryCodeResult =
+        document.getElementById("recoveryCodeResult");
+
+    const recoveryCodeMessage =
+        document.getElementById("recoveryCodeMessage");
+
+    const recoveryCodeValue =
+        document.getElementById("recoveryCodeValue");
+
+    const copyCodeButton =
+        document.getElementById("copyRecoveryCodeBtn");
+
+    function getCsrfToken() {
+        const tokenElement =
+            document.querySelector('meta[name="_csrf"]');
+
+        const headerElement =
+            document.querySelector('meta[name="_csrf_header"]');
+
+        return {
+            token: tokenElement ? tokenElement.content : null,
+            header: headerElement ? headerElement.content : null
+        };
+    }
+
+    generateCodeButton.addEventListener("click", async function () {
+        generateCodeButton.disabled = true;
+        generateCodeButton.textContent = "Generating...";
+
+        recoveryCodeResult.style.display = "block";
+        recoveryCodeMessage.textContent = "Generating your recovery code...";
+        recoveryCodeValue.textContent = "";
+        copyCodeButton.style.display = "none";
+
+        try {
+            const csrf = getCsrfToken();
+
+            const headers = {
+                "Content-Type": "application/json"
+            };
+
+            if (csrf.token && csrf.header) {
+                headers[csrf.header] = csrf.token;
+            }
+
+            const response = await fetch("/api/account/recovery-code", {
+                method: "POST",
+                headers: headers,
+                body: "{}"
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.message || "Could not generate recovery code."
+                );
+            }
+
+            if (!data.recoveryCode) {
+                throw new Error(
+                    "The server did not return a recovery code."
+                );
+            }
+
+            recoveryCodeMessage.textContent =
+                "Save this code securely. Generating another code may invalidate this one.";
+
+            recoveryCodeValue.textContent = data.recoveryCode;
+            copyCodeButton.style.display = "inline-block";
+
+        } catch (error) {
+            recoveryCodeMessage.textContent =
+                error.message || "Something went wrong.";
+
+            recoveryCodeValue.textContent = "";
+        } finally {
+            generateCodeButton.disabled = false;
+            generateCodeButton.textContent = "🔑 Generate Recovery Code";
+        }
+    });
+
+    copyCodeButton.addEventListener("click", async function () {
+        const code = recoveryCodeValue.textContent;
+
+        if (!code) {
+            return;
         }
 
-        profileButton.addEventListener("click", function(event) {
-            event.stopPropagation();
-
-            const isOpen = profileDetails.classList.toggle("show");
-
-            profileButton.setAttribute("aria-expanded", String(isOpen));
-            profileDetails.setAttribute("aria-hidden", String(!isOpen));
-        });
-
-        document.addEventListener("click", function(event) {
-            if (!event.target.closest(".profile-menu")) {
-                closeProfileMenu();
-            }
-        });
-
-        document.addEventListener("keydown", function(event) {
-            if (event.key === "Escape") {
-                closeProfileMenu();
-                profileButton.focus();
-            }
-        });
-
-        // Reveal sections as they enter the viewport
-        const revealElements = document.querySelectorAll(".reveal");
-
-        if ("IntersectionObserver" in window) {
-            const observer = new IntersectionObserver(function(entries) {
-                entries.forEach(function(entry) {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add("active");
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, {
-                threshold: 0.12
-            });
-
-            revealElements.forEach(function(element) {
-                observer.observe(element);
-            });
-        } else {
-            revealElements.forEach(function(element) {
-                element.classList.add("active");
-            });
+        try {
+            await navigator.clipboard.writeText(code);
+            copyCodeButton.textContent = "Copied!";
+        } catch (error) {
+            recoveryCodeMessage.textContent =
+                "Automatic copy failed. Select the code and copy it manually.";
         }
-    </script>
+    });
+</script>
 
 </body>
 </html>

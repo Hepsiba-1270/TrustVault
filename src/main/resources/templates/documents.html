@@ -26,7 +26,7 @@
         }
 
         .container {
-            max-width: 1100px;
+            max-width: 1150px;
             margin: 0 auto;
         }
 
@@ -37,6 +37,21 @@
         .subtitle {
             color: #666;
             margin-bottom: 24px;
+        }
+
+        .back-button {
+            display: inline-block;
+            padding: 10px 16px;
+            margin-bottom: 16px;
+            background: #555;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .back-button:hover {
+            background: #333;
         }
 
         .card {
@@ -51,16 +66,13 @@
             margin-top: 0;
         }
 
-        input,
-        select,
-        button {
+        input, select, button {
             padding: 10px 12px;
             border-radius: 5px;
             font-size: 14px;
         }
 
-        input,
-        select {
+        input, select {
             border: 1px solid #ccc;
             max-width: 100%;
         }
@@ -110,6 +122,10 @@
             min-width: 220px;
         }
 
+        .form-row select {
+            min-width: 160px;
+        }
+
         .message {
             margin-top: 12px;
             padding: 10px;
@@ -118,9 +134,9 @@
             overflow-wrap: anywhere;
         }
 
-        .success,
-        .error,
-        .info {
+        .message.success,
+        .message.error,
+        .message.info {
             display: block;
         }
 
@@ -150,8 +166,7 @@
             margin-top: 12px;
         }
 
-        th,
-        td {
+        th, td {
             padding: 12px;
             text-align: left;
             border-bottom: 1px solid #e5e7eb;
@@ -175,13 +190,30 @@
             justify-content: space-between;
         }
 
-        .permission {
+        .permission,
+        .visibility-badge {
             display: inline-block;
             padding: 4px 8px;
             border-radius: 12px;
             font-size: 12px;
             background: #e0e7ff;
             color: #3730a3;
+        }
+
+        .public-badge {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .private-badge {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .hint {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.5;
         }
 
         @media (max-width: 600px) {
@@ -192,20 +224,33 @@
             .card {
                 padding: 15px;
             }
+
+            .form-row {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .form-row input,
+            .form-row select,
+            .form-row button {
+                width: 100%;
+                margin: 0;
+            }
         }
     </style>
 </head>
 
 <body>
 <div class="container">
-
+    <a th:href="@{/features}" class="back-button">
+      &#8592; Back 
+    </a>
     <h1>TrustVault Documents</h1>
-
     <p class="subtitle">
         Secure document storage, sharing and access management.
     </p>
 
-    <!-- Only OWNER and ADMIN can see the upload section. -->
+    <!-- Owners and admins can upload documents. -->
     <section class="card"
              sec:authorize="hasAnyRole('OWNER', 'ADMIN')">
 
@@ -217,33 +262,40 @@
                     type="file"
                     id="fileInput"
                     accept=".pdf,.txt,.png,.jpg,.jpeg"
-                    required
-                >
-
+                    required>
+                <select id="visibilityInput" required>
+                    <option value="PRIVATE" selected>
+                       private
+                    </option>
+                    <option value="PUBLIC">
+                       public
+                    </option>
+                </select>
                 <button type="submit" id="uploadButton">
                     Upload
                 </button>
             </div>
         </form>
 
-        <p>
-            Allowed formats: PDF, TXT, PNG, JPG, JPEG.
+        <p class="hint">
+            Allowed formats: PDF, TXT, PNG, JPG and JPEG.
             Maximum file size: 10 MB.
+            <br>
+            <strong>Private:</strong> 
+            <br>
+            <strong>Public:</strong> 
         </p>
+     <div id="uploadMessage" class="message"></div>
+   </section>
 
-        <div id="uploadMessage" class="message"></div>
-    </section>
-
-    <!-- Search Documents -->
+    <!-- Search and refresh. -->
     <section class="card">
         <h2>Search Documents</h2>
-
         <div class="form-row">
             <input
                 type="text"
                 id="searchInput"
-                placeholder="Search by document name..."
-            >
+                placeholder="Search by document name or filename...">
 
             <button type="button" id="searchButton">
                 Search
@@ -258,7 +310,36 @@
         </div>
     </section>
 
-    <!-- My Documents -->
+    <!-- Public documents available to all signed-in users. -->
+    <section class="card">
+        <h2>Public Documents</h2>
+
+        <p class="hint">
+            Documents marked Public by their owners or admins.
+        </p>
+
+        <div id="publicMessage" class="message"></div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                <tr>
+                    <th>Document Name</th>
+                    <th>Original Filename</th>
+                    <th>Owner</th>
+                    <th>Size</th>
+                    <th>Uploaded At</th>
+                    <th>Visibility</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+
+                <tbody id="publicRows"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Documents owned by the signed-in user. -->
     <section class="card">
         <h2>My Documents</h2>
 
@@ -272,6 +353,7 @@
                     <th>Original Filename</th>
                     <th>Size</th>
                     <th>Uploaded At</th>
+                    <th>Visibility</th>
                     <th>Actions</th>
                 </tr>
                 </thead>
@@ -281,11 +363,13 @@
         </div>
     </section>
 
-    <!-- Show shared documents to users other than OWNER. -->
-    <section class="card" sec:authorize="!hasRole('OWNER')">
+    <!-- Shared documents. -->
+    <section class="card"
+             sec:authorize="!hasRole('OWNER')">
+
         <h2>Shared With Me</h2>
 
-        <p>
+        <p class="hint">
             Documents other users have shared with your account.
         </p>
 
@@ -309,7 +393,7 @@
         </div>
     </section>
 
-    <!-- Account Information and Logout -->
+    <!-- Account and logout. -->
     <section class="card">
         <div class="account-info">
             <div>
@@ -331,498 +415,614 @@
 </div>
 
 <script>
-    "use strict";
+"use strict";
 
-    // Find upload elements only when the upload section is rendered.
-    const uploadForm = document.getElementById("uploadForm");
-    const fileInput = document.getElementById("fileInput");
-    const uploadButton = document.getElementById("uploadButton");
-    const uploadMessage = document.getElementById("uploadMessage");
+const uploadForm = document.getElementById("uploadForm");
+const fileInput = document.getElementById("fileInput");
+const visibilityInput = document.getElementById("visibilityInput");
+const uploadButton = document.getElementById("uploadButton");
+const uploadMessage = document.getElementById("uploadMessage");
 
-    const searchInput = document.getElementById("searchInput");
-    const searchButton = document.getElementById("searchButton");
-    const refreshButton = document.getElementById("refreshButton");
+const searchInput = document.getElementById("searchInput");
+const searchButton = document.getElementById("searchButton");
+const refreshButton = document.getElementById("refreshButton");
 
-    const ownRows = document.getElementById("ownRows");
-    const ownMessage = document.getElementById("ownMessage");
+const ownRows = document.getElementById("ownRows");
+const ownMessage = document.getElementById("ownMessage");
 
-    // These elements are absent for OWNER accounts.
-    const sharedRows = document.getElementById("sharedRows");
-    const sharedMessage = document.getElementById("sharedMessage");
+const publicRows = document.getElementById("publicRows");
+const publicMessage = document.getElementById("publicMessage");
 
-    const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const sharedRows = document.getElementById("sharedRows");
+const sharedMessage = document.getElementById("sharedMessage");
 
-    const ALLOWED_TYPES = new Set([
-        "application/pdf",
-        "text/plain",
-        "image/png",
-        "image/jpeg"
-    ]);
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-    const ALLOWED_EXTENSIONS = /\.(pdf|txt|png|jpe?g)$/i;
+const ALLOWED_TYPES = new Set([
+    "application/pdf",
+    "text/plain",
+    "image/png",
+    "image/jpeg"
+]);
 
-    let ownDocuments = [];
-    let sharedDocuments = [];
+const ALLOWED_EXTENSIONS = /\.(pdf|txt|png|jpe?g)$/i;
 
-    function showMessage(element, message, type) {
-        if (!element) return;
+let ownDocuments = [];
+let publicDocuments = [];
+let sharedDocuments = [];
 
-        element.textContent = message;
-        element.className = "message " + type;
+function showMessage(element, message, type) {
+    if (!element) return;
+
+    element.textContent = message;
+    element.className = "message " + type;
+}
+
+function clearMessage(element) {
+    if (!element) return;
+
+    element.textContent = "";
+    element.className = "message";
+}
+
+function formatSize(bytes) {
+    const size = Number(bytes) || 0;
+
+    if (size < 1024) return size + " B";
+
+    if (size < 1024 * 1024) {
+        return (size / 1024).toFixed(1) + " KB";
     }
 
-    function clearMessage(element) {
-        if (!element) return;
+    return (size / (1024 * 1024)).toFixed(2) + " MB";
+}
 
-        element.textContent = "";
-        element.className = "message";
+function formatDate(value) {
+    if (!value) return "-";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return String(value);
     }
 
-    function formatSize(bytes) {
-        const size = Number(bytes) || 0;
+    return date.toLocaleString();
+}
 
-        if (size < 1024) return size + " B";
+function createCell(value) {
+    const cell = document.createElement("td");
 
-        if (size < 1024 * 1024) {
-            return (size / 1024).toFixed(1) + " KB";
-        }
+    cell.textContent =
+        value === null || value === undefined || value === ""
+            ? "-"
+            : String(value);
 
-        return (size / (1024 * 1024)).toFixed(2) + " MB";
+    return cell;
+}
+
+function createButton(label, className, onClick) {
+    const button = document.createElement("button");
+
+    button.type = "button";
+    button.textContent = label;
+
+    if (className) {
+        button.className = className;
     }
 
-    function formatDate(value) {
-        if (!value) return "-";
+    button.addEventListener("click", onClick);
 
-        const date = new Date(value);
+    return button;
+}
 
-        if (Number.isNaN(date.getTime())) {
-            return String(value);
-        }
+function createActionCell() {
+    return document.createElement("td");
+}
 
-        return date.toLocaleString();
-    }
+function getSearchTerm() {
+    return searchInput.value.trim().toLowerCase();
+}
 
-    function createCell(value) {
+function matchesSearch(doc) {
+    const term = getSearchTerm();
+
+    if (!term) return true;
+
+    const name = String(doc.name || "").toLowerCase();
+    const filename = String(doc.originalFilename || "").toLowerCase();
+
+    return name.includes(term) || filename.includes(term);
+}
+
+function getVisibility(doc) {
+    const value = String(doc.visibility || "PRIVATE").toUpperCase();
+
+    return value === "PUBLIC" ? "PUBLIC" : "PRIVATE";
+}
+
+function addVisibilityCell(row, doc) {
+    const cell = createCell("");
+    const badge = document.createElement("span");
+    const visibility = getVisibility(doc);
+
+    badge.className = "visibility-badge " +
+        (visibility === "PUBLIC" ? "public-badge" : "private-badge");
+
+    badge.textContent = visibility;
+
+    cell.appendChild(badge);
+    row.appendChild(cell);
+}
+
+// Open a document using the backend access-control endpoint.
+function addViewButton(actions, doc) {
+    actions.appendChild(
+        createButton("View", "", function () {
+            window.open(
+                "/api/documents/" +
+                encodeURIComponent(doc.id) +
+                "/view",
+                "_blank",
+                "noopener"
+            );
+        })
+    );
+}
+
+// Download a document using the backend access-control endpoint.
+function addDownloadButton(actions, doc) {
+    actions.appendChild(
+        createButton("Download", "secondary", function () {
+            window.location.href =
+                "/api/documents/" +
+                encodeURIComponent(doc.id) +
+                "/download";
+        })
+    );
+}
+
+function renderOwnDocuments() {
+    ownRows.replaceChildren();
+
+    const filteredDocuments = ownDocuments.filter(matchesSearch);
+
+    if (filteredDocuments.length === 0) {
+        const row = document.createElement("tr");
         const cell = document.createElement("td");
 
-        cell.textContent =
-            value === null || value === undefined || value === ""
-                ? "-"
-                : String(value);
+        cell.colSpan = 6;
+        cell.className = "empty";
+        cell.textContent = ownDocuments.length === 0
+            ? "You have not uploaded any documents yet."
+            : "No documents match your search.";
 
-        return cell;
+        row.appendChild(cell);
+        ownRows.appendChild(row);
+        return;
     }
 
-    function createButton(label, className, onClick) {
-        const button = document.createElement("button");
+    for (const doc of filteredDocuments) {
+        const row = document.createElement("tr");
 
-        button.type = "button";
-        button.textContent = label;
+        row.appendChild(createCell(doc.name));
+        row.appendChild(createCell(doc.originalFilename));
+        row.appendChild(createCell(formatSize(doc.size)));
+        row.appendChild(createCell(formatDate(doc.uploadedAt)));
+        addVisibilityCell(row, doc);
 
-        if (className) {
-            button.className = className;
-        }
+        const actions = createActionCell();
 
-        button.addEventListener("click", onClick);
+        addViewButton(actions, doc);
+        addDownloadButton(actions, doc);
 
-        return button;
+        row.appendChild(actions);
+        ownRows.appendChild(row);
+    }
+}
+
+function renderPublicDocuments() {
+    publicRows.replaceChildren();
+
+    const filteredDocuments = publicDocuments.filter(matchesSearch);
+
+    if (filteredDocuments.length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+
+        cell.colSpan = 7;
+        cell.className = "empty";
+        cell.textContent = publicDocuments.length === 0
+            ? "No public documents are available."
+            : "No public documents match your search.";
+
+        row.appendChild(cell);
+        publicRows.appendChild(row);
+        return;
     }
 
-    function createActionCell() {
-        return document.createElement("td");
+    for (const doc of filteredDocuments) {
+        const row = document.createElement("tr");
+
+        row.appendChild(createCell(doc.name));
+        row.appendChild(createCell(doc.originalFilename));
+        row.appendChild(createCell(doc.ownerUsername));
+        row.appendChild(createCell(formatSize(doc.size)));
+        row.appendChild(createCell(formatDate(doc.uploadedAt)));
+        addVisibilityCell(row, doc);
+
+        const actions = createActionCell();
+
+        addViewButton(actions, doc);
+        addDownloadButton(actions, doc);
+
+        row.appendChild(actions);
+        publicRows.appendChild(row);
+    }
+}
+
+function renderSharedDocuments() {
+    if (!sharedRows || !sharedMessage) return;
+
+    sharedRows.replaceChildren();
+
+    const filteredDocuments = sharedDocuments.filter(matchesSearch);
+
+    if (filteredDocuments.length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+
+        cell.colSpan = 6;
+        cell.className = "empty";
+        cell.textContent = sharedDocuments.length === 0
+            ? "No documents have been shared with you."
+            : "No shared documents match your search.";
+
+        row.appendChild(cell);
+        sharedRows.appendChild(row);
+        return;
     }
 
-    function getSearchTerm() {
-        return searchInput.value.trim().toLowerCase();
-    }
+    for (const doc of filteredDocuments) {
+        const row = document.createElement("tr");
 
-    function matchesSearch(doc) {
-        const term = getSearchTerm();
+        row.appendChild(createCell(doc.name));
+        row.appendChild(createCell(doc.originalFilename));
+        row.appendChild(createCell(doc.ownerUsername));
+        row.appendChild(createCell(formatSize(doc.size)));
 
-        if (!term) return true;
+        const permissionType =
+            String(doc.permissionType || "").toUpperCase();
 
-        const name = String(doc.name || "").toLowerCase();
-        const filename = String(
-            doc.originalFilename || ""
-        ).toLowerCase();
+        const permissionCell = createCell("");
+        const permissionBadge = document.createElement("span");
 
-        return name.includes(term) || filename.includes(term);
-    }
+        permissionBadge.className = "permission";
+        permissionBadge.textContent = permissionType || "UNKNOWN";
 
-    // Create a view button for a document.
-    function addViewButton(actions, doc) {
-        actions.appendChild(
-            createButton("View", "", function () {
-                window.open(
-                    "/api/documents/" +
-                    encodeURIComponent(doc.id) +
-                    "/view",
-                    "_blank",
-                    "noopener"
-                );
-            })
-        );
-    }
+        permissionCell.appendChild(permissionBadge);
+        row.appendChild(permissionCell);
 
-    // Create a download button for a document.
-    function addDownloadButton(actions, doc) {
-        actions.appendChild(
-            createButton("Download", "secondary", function () {
-                window.location.href =
-                    "/api/documents/" +
-                    encodeURIComponent(doc.id) +
-                    "/download";
-            })
-        );
-    }
+        const actions = createActionCell();
 
-    // Render documents owned by the logged-in user.
-    function renderOwnDocuments() {
-        ownRows.replaceChildren();
-
-        const filteredDocuments = ownDocuments.filter(matchesSearch);
-
-        if (filteredDocuments.length === 0) {
-            const row = document.createElement("tr");
-            const cell = document.createElement("td");
-
-            cell.colSpan = 5;
-            cell.className = "empty";
-            cell.textContent = ownDocuments.length === 0
-                ? "You have not uploaded any documents yet."
-                : "No documents match your search.";
-
-            row.appendChild(cell);
-            ownRows.appendChild(row);
-            return;
-        }
-
-        for (const doc of filteredDocuments) {
-            const row = document.createElement("tr");
-
-            row.appendChild(createCell(doc.name));
-            row.appendChild(createCell(doc.originalFilename));
-            row.appendChild(createCell(formatSize(doc.size)));
-            row.appendChild(createCell(formatDate(doc.uploadedAt)));
-
-            const actions = createActionCell();
-
+        if (permissionType === "VIEW" ||
+            permissionType === "DOWNLOAD") {
             addViewButton(actions, doc);
-            addDownloadButton(actions, doc);
-
-            row.appendChild(actions);
-            ownRows.appendChild(row);
         }
+
+        if (permissionType === "DOWNLOAD") {
+            addDownloadButton(actions, doc);
+        }
+
+        row.appendChild(actions);
+        sharedRows.appendChild(row);
+    }
+}
+
+async function fetchDocumentList(url) {
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            "Accept": "application/json"
+        },
+        credentials: "same-origin"
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            throw new Error("Session expired. Please log in again.");
+        }
+
+        if (response.status === 403) {
+            throw new Error(
+                "You do not have permission to access these documents."
+            );
+        }
+
+        if (response.status === 404) {
+            throw new Error(
+                "The document endpoint was not found: " + url
+            );
+        }
+
+        throw new Error(
+            "Could not load documents. HTTP " + response.status
+        );
     }
 
-    // Render documents shared with the logged-in user.
-    function renderSharedDocuments() {
-        if (!sharedRows || !sharedMessage) return;
+    const data = await response.json();
 
-        sharedRows.replaceChildren();
+    if (!Array.isArray(data)) {
+        throw new Error(
+            "Unexpected response received from the server."
+        );
+    }
 
-        const filteredDocuments = sharedDocuments.filter(matchesSearch);
+    return data;
+}
 
-        if (filteredDocuments.length === 0) {
-            const row = document.createElement("tr");
-            const cell = document.createElement("td");
+async function loadDocuments() {
+    refreshButton.disabled = true;
 
-            cell.colSpan = 6;
-            cell.className = "empty";
-            cell.textContent = sharedDocuments.length === 0
-                ? "No documents have been shared with you."
-                : "No shared documents match your search.";
+    clearMessage(ownMessage);
+    clearMessage(publicMessage);
 
-            row.appendChild(cell);
-            sharedRows.appendChild(row);
+    showMessage(
+        ownMessage,
+        "Loading your documents...",
+        "info"
+    );
+
+    showMessage(
+        publicMessage,
+        "Loading public documents...",
+        "info"
+    );
+
+    if (sharedMessage) {
+        clearMessage(sharedMessage);
+        showMessage(
+            sharedMessage,
+            "Loading shared documents...",
+            "info"
+        );
+    }
+
+    try {
+        // Load documents owned by the signed-in user.
+        try {
+            ownDocuments = await fetchDocumentList("/api/documents");
+            renderOwnDocuments();
+            clearMessage(ownMessage);
+        } catch (error) {
+            ownDocuments = [];
+            renderOwnDocuments();
+
+            showMessage(
+                ownMessage,
+                error.message || "Failed to load your documents.",
+                "error"
+            );
+        }
+
+        // Load public documents available to signed-in users.
+        try {
+            publicDocuments = await fetchDocumentList(
+                "/api/documents/public"
+            );
+
+            renderPublicDocuments();
+            clearMessage(publicMessage);
+        } catch (error) {
+            publicDocuments = [];
+            renderPublicDocuments();
+
+            showMessage(
+                publicMessage,
+                error.message ||
+                    "Failed to load public documents.",
+                "error"
+            );
+        }
+
+        // Load documents explicitly shared with this user.
+        if (sharedRows && sharedMessage) {
+            try {
+                const result = await fetchDocumentList(
+                    "/api/documents/shared-with-me"
+                );
+
+                const ownedIds = new Set(
+                    ownDocuments.map(function (doc) {
+                        return String(doc.id);
+                    })
+                );
+
+                const publicIds = new Set(
+                    publicDocuments.map(function (doc) {
+                        return String(doc.id);
+                    })
+                );
+
+                sharedDocuments = result.filter(function (doc) {
+                    const id = String(doc.id);
+
+                    return !ownedIds.has(id) && !publicIds.has(id);
+                });
+
+                renderSharedDocuments();
+                clearMessage(sharedMessage);
+            } catch (error) {
+                sharedDocuments = [];
+                renderSharedDocuments();
+
+                showMessage(
+                    sharedMessage,
+                    error.message ||
+                        "Failed to load shared documents.",
+                    "error"
+                );
+            }
+        } else {
+            sharedDocuments = [];
+        }
+    } finally {
+        refreshButton.disabled = false;
+    }
+}
+
+// Upload only when the upload form is available to this role.
+if (uploadForm && fileInput && visibilityInput &&
+    uploadButton && uploadMessage) {
+
+    uploadForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        clearMessage(uploadMessage);
+
+        const file = fileInput.files[0];
+
+        if (!file) {
+            showMessage(
+                uploadMessage,
+                "Please select a file.",
+                "error"
+            );
             return;
         }
 
-        for (const doc of filteredDocuments) {
-            const row = document.createElement("tr");
-
-            row.appendChild(createCell(doc.name));
-            row.appendChild(createCell(doc.originalFilename));
-            row.appendChild(createCell(doc.ownerUsername));
-            row.appendChild(createCell(formatSize(doc.size)));
-
-            const permissionType =
-                String(doc.permissionType || "").toUpperCase();
-
-            const permissionCell = createCell("");
-            const permissionBadge = document.createElement("span");
-
-            permissionBadge.className = "permission";
-            permissionBadge.textContent = permissionType || "UNKNOWN";
-
-            permissionCell.appendChild(permissionBadge);
-            row.appendChild(permissionCell);
-
-            const actions = createActionCell();
-
-            // VIEW and DOWNLOAD permissions both allow viewing.
-            if (
-                permissionType === "VIEW" ||
-                permissionType === "DOWNLOAD"
-            ) {
-                addViewButton(actions, doc);
-            }
-
-            // Only DOWNLOAD permission allows downloading.
-            if (permissionType === "DOWNLOAD") {
-                addDownloadButton(actions, doc);
-            }
-
-            row.appendChild(actions);
-            sharedRows.appendChild(row);
-        }
-    }
-
-    async function fetchDocumentList(url) {
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            },
-            credentials: "same-origin"
-        });
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                throw new Error(
-                    "Session expired. Please log in again."
-                );
-            }
-
-            if (response.status === 403) {
-                throw new Error(
-                    "You do not have permission to access these documents."
-                );
-            }
-
-            throw new Error(
-                "Could not load documents. HTTP " + response.status
+        if (file.size > MAX_FILE_SIZE) {
+            showMessage(
+                uploadMessage,
+                "File size must not exceed 10 MB.",
+                "error"
             );
+            return;
         }
 
-        const data = await response.json();
-
-        if (!Array.isArray(data)) {
-            throw new Error(
-                "Unexpected response received from the server."
+        if (!ALLOWED_EXTENSIONS.test(file.name)) {
+            showMessage(
+                uploadMessage,
+                "Only PDF, TXT, PNG, JPG and JPEG files are allowed.",
+                "error"
             );
+            return;
         }
 
-        return data;
-    }
+        if (file.type && !ALLOWED_TYPES.has(file.type)) {
+            showMessage(
+                uploadMessage,
+                "Unsupported file type. Select PDF, TXT, PNG, JPG or JPEG.",
+                "error"
+            );
+            return;
+        }
 
-    async function loadDocuments() {
-        refreshButton.disabled = true;
+        const visibility = visibilityInput.value;
 
-        clearMessage(ownMessage);
+        if (!["PUBLIC", "PRIVATE"].includes(visibility)) {
+            showMessage(
+                uploadMessage,
+                "Please select a valid visibility option.",
+                "error"
+            );
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("visibility", visibility);
+
+        const csrfTokenElement = document.querySelector(
+            'meta[name="_csrf"]'
+        );
+
+        const csrfHeaderElement = document.querySelector(
+            'meta[name="_csrf_header"]'
+        );
+
+        const headers = {
+            "Accept": "application/json"
+        };
+
+        if (csrfTokenElement && csrfHeaderElement) {
+            headers[csrfHeaderElement.content] =
+                csrfTokenElement.content;
+        }
+
+        uploadButton.disabled = true;
+
         showMessage(
-            ownMessage,
-            "Loading your documents...",
+            uploadMessage,
+            "Uploading " + visibility.toLowerCase() + " document...",
             "info"
         );
 
-        if (sharedMessage) {
-            clearMessage(sharedMessage);
-            showMessage(
-                sharedMessage,
-                "Loading shared documents...",
-                "info"
-            );
-        }
-
         try {
-            try {
-                ownDocuments = await fetchDocumentList("/api/documents");
-                renderOwnDocuments();
-                clearMessage(ownMessage);
-            } catch (error) {
-                ownDocuments = [];
-                renderOwnDocuments();
+            const response = await fetch("/api/documents/upload", {
+                method: "POST",
+                headers: headers,
+                body: formData,
+                credentials: "same-origin"
+            });
 
-                showMessage(
-                    ownMessage,
-                    error.message || "Failed to load your documents.",
-                    "error"
-                );
-            }
+            if (!response.ok) {
+                let errorMessage =
+                    "Upload failed. HTTP " + response.status;
 
-            // Do not request the shared list when that section is absent.
-            if (sharedRows && sharedMessage) {
                 try {
-                    const result = await fetchDocumentList(
-                        "/api/documents/shared-with-me"
-                    );
+                    const errorData = await response.json();
 
-                    const ownedIds = new Set(
-                        ownDocuments.map(function (doc) {
-                            return String(doc.id);
-                        })
-                    );
-
-                    sharedDocuments = result.filter(function (doc) {
-                        return !ownedIds.has(String(doc.id));
-                    });
-
-                    renderSharedDocuments();
-                    clearMessage(sharedMessage);
-                } catch (error) {
-                    sharedDocuments = [];
-                    renderSharedDocuments();
-
-                    showMessage(
-                        sharedMessage,
-                        error.message || "Failed to load shared documents.",
-                        "error"
-                    );
+                    if (errorData.message) {
+                        errorMessage = errorData.message;
+                    } else if (errorData.error) {
+                        errorMessage = errorData.error;
+                    }
+                } catch (ignored) {
+                    // Keep the default message for non-JSON responses.
                 }
-            } else {
-                sharedDocuments = [];
-            }
-        } finally {
-            refreshButton.disabled = false;
-        }
-    }
 
-    // Register upload behavior only when the upload form exists.
-    if (uploadForm && fileInput && uploadButton && uploadMessage) {
-        uploadForm.addEventListener("submit", async function (event) {
-            event.preventDefault();
-
-            clearMessage(uploadMessage);
-
-            const file = fileInput.files[0];
-
-            if (!file) {
-                showMessage(
-                    uploadMessage,
-                    "Please select a file.",
-                    "error"
-                );
-                return;
+                throw new Error(errorMessage);
             }
 
-            if (file.size > MAX_FILE_SIZE) {
-                showMessage(
-                    uploadMessage,
-                    "File size must not exceed 10 MB.",
-                    "error"
-                );
-                return;
-            }
-
-            if (!ALLOWED_EXTENSIONS.test(file.name)) {
-                showMessage(
-                    uploadMessage,
-                    "Only PDF, TXT, PNG, JPG and JPEG files are allowed.",
-                    "error"
-                );
-                return;
-            }
-
-            if (file.type && !ALLOWED_TYPES.has(file.type)) {
-                showMessage(
-                    uploadMessage,
-                    "Unsupported file type. Please select PDF, TXT, PNG, JPG or JPEG.",
-                    "error"
-                );
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append("file", file);
-
-            const csrfTokenElement = document.querySelector(
-                'meta[name="_csrf"]'
-            );
-
-            const csrfHeaderElement = document.querySelector(
-                'meta[name="_csrf_header"]'
-            );
-
-            const headers = {
-                "Accept": "application/json"
-            };
-
-            if (csrfTokenElement && csrfHeaderElement) {
-                headers[csrfHeaderElement.content] =
-                    csrfTokenElement.content;
-            }
-
-            uploadButton.disabled = true;
+            fileInput.value = "";
 
             showMessage(
                 uploadMessage,
-                "Uploading document...",
-                "info"
+                visibility === "PUBLIC"
+                    ? "Public document uploaded successfully."
+                    : "Private document uploaded successfully.",
+                "success"
             );
 
-            try {
-                const response = await fetch("/api/documents/upload", {
-                    method: "POST",
-                    headers: headers,
-                    body: formData,
-                    credentials: "same-origin"
-                });
-
-                if (!response.ok) {
-                    let errorMessage =
-                        "Upload failed. HTTP " + response.status;
-
-                    try {
-                        const errorData = await response.json();
-
-                        if (errorData.message) {
-                            errorMessage = errorData.message;
-                        } else if (errorData.error) {
-                            errorMessage = errorData.error;
-                        }
-                    } catch (ignored) {
-                        // Keep the default message for non-JSON responses.
-                    }
-
-                    throw new Error(errorMessage);
-                }
-
-                fileInput.value = "";
-
-                showMessage(
-                    uploadMessage,
-                    "Document uploaded successfully.",
-                    "success"
-                );
-
-                await loadDocuments();
-            } catch (error) {
-                showMessage(
-                    uploadMessage,
-                    error.message || "An error occurred while uploading.",
-                    "error"
-                );
-            } finally {
-                uploadButton.disabled = false;
-            }
-        });
-    }
-
-    searchButton.addEventListener("click", function () {
-        renderOwnDocuments();
-        renderSharedDocuments();
+            await loadDocuments();
+        } catch (error) {
+            showMessage(
+                uploadMessage,
+                error.message || "An error occurred while uploading.",
+                "error"
+            );
+        } finally {
+            uploadButton.disabled = false;
+        }
     });
+}
 
-    searchInput.addEventListener("input", function () {
-        renderOwnDocuments();
-        renderSharedDocuments();
-    });
+searchButton.addEventListener("click", function () {
+    renderOwnDocuments();
+    renderPublicDocuments();
+    renderSharedDocuments();
+});
 
-    refreshButton.addEventListener("click", loadDocuments);
+searchInput.addEventListener("input", function () {
+    renderOwnDocuments();
+    renderPublicDocuments();
+    renderSharedDocuments();
+});
 
-    // Load document lists when the page opens.
-    loadDocuments();
+refreshButton.addEventListener("click", loadDocuments);
+
+// Load document lists when the page opens.
+loadDocuments();
 </script>
 
 </body>

@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -53,25 +54,26 @@ public class DocumentController {
     @PostMapping("/upload")
     public Map<String, Object> upload(
             @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "visibility", defaultValue = "PRIVATE")
+            String visibility,
             Authentication authentication) throws IOException {
 
-        // Enforce the role restriction on the server.
         boolean canUpload = authentication != null
                 && authentication.getAuthorities().stream()
-                        .anyMatch(authority -> {
-                            String role = authority.getAuthority();
+                .anyMatch(authority -> {
+                    String role = authority.getAuthority();
 
-                            if (role == null) {
-                                return false;
-                            }
+                    if (role == null) {
+                        return false;
+                    }
 
-                            if (role.startsWith("ROLE_")) {
-                                role = role.substring(5);
-                            }
+                    if (role.startsWith("ROLE_")) {
+                        role = role.substring(5);
+                    }
 
-                            return "OWNER".equalsIgnoreCase(role)
-                                    || "ADMIN".equalsIgnoreCase(role);
-                        });
+                    return "OWNER".equalsIgnoreCase(role)
+                            || "ADMIN".equalsIgnoreCase(role);
+                });
 
         if (!canUpload) {
             throw new ResponseStatusException(
@@ -79,7 +81,6 @@ public class DocumentController {
                     "Only Owners and Admins can upload documents.");
         }
 
-        // Validate the uploaded file.
         if (file == null || file.isEmpty()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -92,6 +93,18 @@ public class DocumentController {
                     "Maximum file size is 10 MB.");
         }
 
+        // Validate visibility before storing the file.
+        String normalizedVisibility = visibility == null
+                ? ""
+                : visibility.trim().toUpperCase(Locale.ROOT);
+
+        if (!"PUBLIC".equals(normalizedVisibility)
+                && !"PRIVATE".equals(normalizedVisibility)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Visibility must be PUBLIC or PRIVATE.");
+        }
+
         String contentType = file.getContentType();
 
         List<String> allowedTypes = List.of(
@@ -102,7 +115,7 @@ public class DocumentController {
         );
 
         if (contentType == null
-                || !allowedTypes.contains(contentType.toLowerCase())) {
+                || !allowedTypes.contains(contentType.toLowerCase(Locale.ROOT))) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Only PDF, TXT, PNG and JPEG files are allowed.");
@@ -116,13 +129,12 @@ public class DocumentController {
                 || originalName.contains("/")
                 || originalName.contains("\\")
                 || originalName.contains("..")) {
-
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Invalid filename.");
         }
 
-        // Store the file privately.
+        // Store the physical file in private storage.
         String storageFilename = storageService.storeFile(file);
         Document saved;
 
@@ -135,11 +147,11 @@ public class DocumentController {
             document.setContentType(contentType);
             document.setSize(file.getSize());
             document.setOwnerUsername(authentication.getName());
+            document.setVisibility(normalizedVisibility);
 
             saved = documentRepository.save(document);
 
         } catch (RuntimeException ex) {
-            // Delete the stored file if saving the database record fails.
             Files.deleteIfExists(
                     storageService.getStoragePath(storageFilename));
             throw ex;
@@ -148,30 +160,48 @@ public class DocumentController {
         // Record the successful upload in the audit log.
         auditLogService.logEvent(
                 authentication.getName(),
-                "UPLOAD",
+                "UPLOAD_" + normalizedVisibility,
                 saved.getId(),
                 saved.getOriginalFilename());
 
         Map<String, Object> response = new HashMap<>();
+
         response.put("message", "Upload successful");
         response.put("documentId", saved.getId());
         response.put("filename", saved.getOriginalFilename());
         response.put("owner", saved.getOwnerUsername());
+        response.put("visibility", saved.getVisibility());
 
         return response;
     }
 
     // List documents owned by the logged-in user.
     @GetMapping
-    public List<Document> myDocuments(
-            Authentication authentication) {
+    public List<Document> myDocuments(Authentication authentication) {
 
         return documentRepository.findByOwnerUsername(
                 authentication.getName());
     }
 
-    // List documents shared with the logged-in user.
-    // Do not expose the internal storage filename.
+    // List public documents for any authenticated user.
+    @GetMapping("/public")
+    public List<Map<String, Object>> publicDocuments(
+            Authentication authentication) {
+
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        for (Document document : documentRepository.findAll()) {
+            if (!"PUBLIC".equalsIgnoreCase(document.getVisibility())) {
+                continue;
+            }
+
+            result.add(toDocumentSummary(document));
+        }
+
+        return result;
+    }
+
+    // List documents explicitly shared with the logged-in user.
     @GetMapping("/shared-with-me")
     public List<Map<String, Object>> sharedDocuments(
             Authentication authentication) {
@@ -187,8 +217,7 @@ public class DocumentController {
         for (DocumentPermission permission : permissions) {
 
             Optional<Document> optionalDocument =
-                    documentRepository.findById(
-                            permission.getDocumentId());
+                    documentRepository.findById(permission.getDocumentId());
 
             if (optionalDocument.isEmpty()) {
                 continue;
@@ -197,19 +226,11 @@ public class DocumentController {
             Document doc = optionalDocument.get();
 
             // Ignore stale permission records if the owner does not match.
-            if (!doc.getOwnerUsername().equals(
-                    permission.getOwnerUsername())) {
+            if (!doc.getOwnerUsername().equals(permission.getOwnerUsername())) {
                 continue;
             }
 
-            Map<String, Object> item = new HashMap<>();
-
-            item.put("id", doc.getId());
-            item.put("name", doc.getName());
-            item.put("originalFilename", doc.getOriginalFilename());
-            item.put("ownerUsername", doc.getOwnerUsername());
-            item.put("size", doc.getSize());
-            item.put("uploadedAt", doc.getUploadedAt());
+            Map<String, Object> item = toDocumentSummary(doc);
             item.put("permissionType", permission.getPermissionType());
 
             result.add(item);
@@ -218,7 +239,7 @@ public class DocumentController {
         return result;
     }
 
-    // The owner or a user with VIEW or DOWNLOAD permission can view.
+    // View a public document, an owned document, or a permitted shared document.
     @GetMapping("/{id}/view")
     public ResponseEntity<Resource> viewDocument(
             @PathVariable Long id,
@@ -230,12 +251,13 @@ public class DocumentController {
         boolean isOwner =
                 document.getOwnerUsername().equals(username);
 
-        if (!isOwner) {
+        boolean isPublic =
+                "PUBLIC".equalsIgnoreCase(document.getVisibility());
 
+        if (!isOwner && !isPublic) {
             Optional<DocumentPermission> permission =
                     permissionRepository
-                            .findByDocumentIdAndSharedWithUsername(
-                                    id, username);
+                            .findByDocumentIdAndSharedWithUsername(id, username);
 
             if (permission.isEmpty()) {
                 throw new ResponseStatusException(
@@ -247,7 +269,6 @@ public class DocumentController {
 
             if (!"VIEW".equalsIgnoreCase(type)
                     && !"DOWNLOAD".equalsIgnoreCase(type)) {
-
                 throw new ResponseStatusException(
                         HttpStatus.FORBIDDEN,
                         "View permission is required.");
@@ -265,7 +286,8 @@ public class DocumentController {
         return buildFileResponse(document, path, true);
     }
 
-    // Only the owner or a user with DOWNLOAD permission can download.
+    // Download a public document, an owned document,
+    // or a shared document with DOWNLOAD permission.
     @GetMapping("/{id}/download")
     public ResponseEntity<Resource> downloadDocument(
             @PathVariable Long id,
@@ -277,17 +299,17 @@ public class DocumentController {
         boolean isOwner =
                 document.getOwnerUsername().equals(username);
 
-        if (!isOwner) {
+        boolean isPublic =
+                "PUBLIC".equalsIgnoreCase(document.getVisibility());
 
+        if (!isOwner && !isPublic) {
             Optional<DocumentPermission> permission =
                     permissionRepository
-                            .findByDocumentIdAndSharedWithUsername(
-                                    id, username);
+                            .findByDocumentIdAndSharedWithUsername(id, username);
 
             if (permission.isEmpty()
                     || !"DOWNLOAD".equalsIgnoreCase(
                             permission.get().getPermissionType())) {
-
                 throw new ResponseStatusException(
                         HttpStatus.FORBIDDEN,
                         "Download permission is required.");
@@ -303,6 +325,22 @@ public class DocumentController {
                 document.getOriginalFilename());
 
         return buildFileResponse(document, path, false);
+    }
+
+    // Create a safe summary without exposing the internal storage filename.
+    private Map<String, Object> toDocumentSummary(Document document) {
+
+        Map<String, Object> item = new HashMap<>();
+
+        item.put("id", document.getId());
+        item.put("name", document.getName());
+        item.put("originalFilename", document.getOriginalFilename());
+        item.put("ownerUsername", document.getOwnerUsername());
+        item.put("size", document.getSize());
+        item.put("uploadedAt", document.getUploadedAt());
+        item.put("visibility", document.getVisibility());
+
+        return item;
     }
 
     // Find a document or return 404.
@@ -335,8 +373,7 @@ public class DocumentController {
             Path path,
             boolean inline) throws IOException {
 
-        MediaType mediaType =
-                MediaType.APPLICATION_OCTET_STREAM;
+        MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
 
         String contentType = document.getContentType();
 
@@ -353,12 +390,23 @@ public class DocumentController {
 
         String disposition = inline ? "inline" : "attachment";
 
+        // Preserve the original filename and its extension.
+        String filename = document.getOriginalFilename();
+
+        if (filename == null || filename.isBlank()) {
+            filename = "document-" + document.getId();
+        }
+
+        // Remove unsafe characters from the response filename.
+        filename = filename.replace("\"", "")
+                .replace("/", "_")
+                .replace("\\", "_");
+
         return ResponseEntity.ok()
                 .contentType(mediaType)
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
-                        disposition + "; filename=\"document-"
-                                + document.getId() + "\"")
+                        disposition + "; filename=\"" + filename + "\"")
                 .header("X-Content-Type-Options", "nosniff")
                 .body(resource);
     }

@@ -1,6 +1,8 @@
 
 package com.trustvault.controller;
 
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -9,7 +11,9 @@ import java.util.Set;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,6 +36,7 @@ import jakarta.validation.constraints.Size;
 
 @RestController
 @RequestMapping("/api/admin")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
     private final UserRepository userRepository;
@@ -54,16 +59,20 @@ public class AdminController {
         this.passwordEncoder = passwordEncoder;
     }
 
+    // Return dashboard statistics.
     @GetMapping("/stats")
     public Map<String, Long> getStatistics() {
         Map<String, Long> stats = new LinkedHashMap<>();
+
         stats.put("totalUsers", userRepository.count());
         stats.put("totalDocuments", documentRepository.count());
         stats.put("totalPermissions", permissionRepository.count());
         stats.put("totalAuditLogs", auditLogRepository.count());
+
         return stats;
     }
 
+    // Return the five most recent audit logs.
     @GetMapping("/recent-logs")
     public List<AuditLog> getRecentLogs() {
         return auditLogRepository
@@ -73,7 +82,7 @@ public class AdminController {
                 .toList();
     }
 
-    // Return user details without exposing passwords.
+    // Return user details without exposing passwords or recovery data.
     @GetMapping("/users")
     public List<Map<String, Object>> getUsers() {
         return userRepository.findAll()
@@ -172,6 +181,44 @@ public class AdminController {
         return ResponseEntity.ok(result);
     }
 
+    // Generate a temporary password for an existing user.
+    @PostMapping("/users/{username}/reset-password")
+    @Transactional
+    public ResponseEntity<?> resetUserPassword(
+            @PathVariable String username) {
+
+        AppUser user = userRepository.findByUsername(username)
+                .orElse(null);
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", "User not found."));
+        }
+
+        byte[] bytes = new byte[18];
+        new SecureRandom().nextBytes(bytes);
+
+        String temporaryPassword = Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString(bytes);
+
+        user.setPassword(passwordEncoder.encode(temporaryPassword));
+
+        // These methods must exist in AppUser.java.
+        user.setMustChangePassword(true);
+        user.setRecoveryCodeHash(null);
+
+        userRepository.save(user);
+
+        Map<String, String> result = new LinkedHashMap<>();
+        result.put("message",
+                "Temporary password created. Share it securely.");
+        result.put("temporaryPassword", temporaryPassword);
+
+        return ResponseEntity.ok(result);
+    }
+
+    // Normalize role names consistently.
     private String normalizeRole(String role) {
         if (role == null) {
             return "";

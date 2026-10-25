@@ -20,6 +20,19 @@ public class AppUser {
     @Column(nullable = false, length = 20)
     private String role;
 
+    // Password recovery fields.
+    @Column(length = 100)
+    private String recoveryQuestion;
+
+    @Column(length = 255)
+    private String recoveryAnswerHash;
+
+    @Column(length = 255)
+    private String recoveryCodeHash;
+
+    @Column(nullable = false)
+    private boolean mustChangePassword = false;
+
     public AppUser() {
     }
 
@@ -55,5 +68,37 @@ public class AppUser {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getRecoveryQuestion() {
+        return recoveryQuestion;
+    }
+
+    public void setRecoveryQuestion(String recoveryQuestion) {
+        this.recoveryQuestion = recoveryQuestion;
+    }
+
+    public String getRecoveryAnswerHash() {
+        return recoveryAnswerHash;
+    }
+
+    public void setRecoveryAnswerHash(String recoveryAnswerHash) {
+        this.recoveryAnswerHash = recoveryAnswerHash;
+    }
+
+    public String getRecoveryCodeHash() {
+        return recoveryCodeHash;
+    }
+
+    public void setRecoveryCodeHash(String recoveryCodeHash) {
+        this.recoveryCodeHash = recoveryCodeHash;
+    }
+
+    public boolean isMustChangePassword() {
+        return mustChangePassword;
+    }
+
+    public void setMustChangePassword(boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
     }
 }

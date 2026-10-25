@@ -30,6 +30,10 @@ public class PageController {
     public String dashboard() {
         return "dashboard";
     }
+    @GetMapping("/features")
+    public String features() {
+        return "features";
+    }
 
     @GetMapping("/documents")
     public String documents() {

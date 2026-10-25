@@ -4,54 +4,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>TrustVault | Create Account</title>
 
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
             min-height: 100vh;
-            padding: 24px;
+            padding: 28px 16px;
             font-family: Arial, sans-serif;
             color: #172554;
-
             background:
-                linear-gradient(
-                    rgba(5, 15, 38, 0.65),
-                    rgba(5, 15, 38, 0.78)
-                ),
+                linear-gradient(rgba(5,15,38,.70), rgba(5,15,38,.82)),
                 url('/images/siup.jpg') center / cover no-repeat fixed;
-
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .signup-card {
+        .card {
             width: 100%;
-            max-width: 440px;
+            max-width: 460px;
             padding: 32px;
-            background: rgba(255, 255, 255, 0.97);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 18px;
-            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+            background: rgba(255,255,255,.98);
+            border: 1px solid rgba(255,255,255,.7);
+            border-radius: 20px;
+            box-shadow: 0 24px 65px rgba(0,0,0,.30);
         }
 
         .brand-icon {
-            width: 52px;
-            height: 52px;
+            width: 54px;
+            height: 54px;
             margin: 0 auto 12px;
-            border-radius: 15px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             background: #e8efff;
-            color: #2457d6;
-            font-size: 26px;
+            font-size: 27px;
         }
 
         h1 {
@@ -66,319 +57,298 @@
             text-align: center;
             color: #64748b;
             font-size: 14px;
-            line-height: 1.5;
+            line-height: 1.6;
         }
 
-        .form-group {
-            margin-bottom: 16px;
+        .section-title {
+            margin: 22px 0 15px;
+            padding-top: 17px;
+            border-top: 1px solid #e2e8f0;
+            color: #173b83;
+            font-size: 14px;
+            font-weight: 700;
         }
 
-        .form-group label {
+        .form-group { margin-bottom: 15px; }
+
+        label {
             display: block;
             margin-bottom: 7px;
             color: #26364a;
-            font-size: 14px;
-            font-weight: bold;
+            font-size: 13px;
+            font-weight: 700;
         }
 
-        .form-group input {
+        input, select {
             display: block;
             width: 100%;
-            padding: 12px 13px;
+            min-height: 43px;
+            padding: 11px 12px;
             border: 1px solid #cbd5e1;
             border-radius: 8px;
-            background: #fff;
+            background: white;
             color: #172554;
+            font-family: inherit;
             font-size: 14px;
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
-        .form-group input:focus {
+        input:focus, select:focus {
             border-color: #2457d6;
-            box-shadow: 0 0 0 3px rgba(36, 87, 214, 0.13);
+            box-shadow: 0 0 0 3px rgba(36,87,214,.12);
         }
 
-        .note,
-        .password-hint {
+        .hint {
             margin: 7px 0 0;
             color: #64748b;
             font-size: 12px;
             line-height: 1.5;
         }
 
-        .password-strength {
+        .status {
             margin-top: 7px;
             font-size: 12px;
-            font-weight: bold;
             line-height: 1.5;
         }
 
-        .error {
+        .error, .success {
             padding: 11px;
-            border-radius: 7px;
-            background: #fff0ef;
-            color: #b42318;
-            font-size: 13px;
-            line-height: 1.5;
-            overflow-wrap: anywhere;
-        }
-
-        .success {
-            padding: 11px;
-            border-radius: 7px;
-            background: #eaf8ef;
-            color: #187344;
-            font-size: 13px;
-            line-height: 1.5;
-            overflow-wrap: anywhere;
-        }
-
-        .signup-button {
-            width: 100%;
-            margin-top: 12px;
-            padding: 13px;
-            border: none;
             border-radius: 8px;
-            background: #2457d6;
-            color: #fff;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.2s;
+            font-size: 13px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
         }
 
-        .signup-button:hover:not(:disabled) {
+        .error { background: #fff0ef; color: #b42318; }
+        .success { background: #eaf8ef; color: #187344; }
+
+        .note {
+            margin: 16px 0 0;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .primary-button {
+            width: 100%;
+            margin-top: 18px;
+            padding: 14px;
+            border: none;
+            border-radius: 9px;
+            background: #2457d6;
+            color: white;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background .2s, transform .2s;
+        }
+
+        .primary-button:hover:not(:disabled) {
             background: #173f9f;
             transform: translateY(-1px);
         }
 
-        .signup-button:disabled {
-            background: #879bb9;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .signup-button:focus-visible,
-        .footer a:focus-visible {
-            outline: 3px solid #93b4ff;
-            outline-offset: 3px;
+        .primary-button:disabled {
+            opacity: .7;
+            cursor: wait;
         }
 
         .footer {
-            margin-top: 20px;
+            margin-top: 21px;
             text-align: center;
             color: #64748b;
-            font-size: 14px;
-            line-height: 1.6;
+            font-size: 13px;
+            line-height: 1.8;
         }
 
-        .footer a {
+        a {
             color: #2457d6;
+            font-weight: 700;
             text-decoration: none;
-            font-weight: bold;
         }
 
-        .footer a:hover {
-            text-decoration: underline;
-        }
+        a:hover { text-decoration: underline; }
 
         @media (max-width: 480px) {
-            body {
-                padding: 16px;
-                background-attachment: scroll;
-            }
-
-            .signup-card {
-                padding: 25px 21px;
-            }
-
-            h1 {
-                font-size: 25px;
-            }
+            body { padding: 16px; background-attachment: scroll; }
+            .card { padding: 25px 21px; }
         }
     </style>
 </head>
 
 <body>
-    <main class="signup-card">
-        <div class="brand-icon" aria-hidden="true">&#128274;</div>
+<main class="card">
+    <div class="brand-icon" aria-hidden="true">&#128274;</div>
 
-        <h1>TrustVault</h1>
+    <h1>TrustVault</h1>
+    <p class="subtitle">Create your secure account</p>
 
-        <p class="subtitle">Create your secure account</p>
+    <p class="error" th:if="${error}" th:text="${error}" role="alert"></p>
+    <p class="success" th:if="${success}" th:text="${success}" role="status"></p>
 
-        <p
-            class="error"
-            th:if="${error}"
-            th:text="${error}"
-            role="alert">
-        </p>
+    <form th:action="@{/signup}" method="post" id="signupForm">
 
-        <p
-            class="success"
-            th:if="${success}"
-            th:text="${success}"
-            role="status">
-        </p>
+        <input type="hidden"
+               th:name="${_csrf.parameterName}"
+               th:value="${_csrf.token}">
 
-        <form
-            th:action="@{/signup}"
-            method="post"
-            id="signupForm">
-
-            <!-- Preserve Spring Security CSRF protection -->
-            <input
-                type="hidden"
-                th:name="${_csrf.parameterName}"
-                th:value="${_csrf.token}">
-
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input
-                    id="username"
-                    name="username"
-                    type="text"
-                    minlength="3"
-                    maxlength="50"
-                    autocomplete="username"
-                    placeholder="Enter username"
-                    required>
-            </div>
-
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    minlength="8"
-                    autocomplete="new-password"
-                    placeholder="Create a strong password"
-                    aria-describedby="passwordStrength passwordHint"
-                    required>
-
-                <div
-                    id="passwordStrength"
-                    class="password-strength"
-                    aria-live="polite">
-                    Enter a password
-                </div>
-
-                <p id="passwordHint" class="password-hint">
-                    Minimum 8 characters, including uppercase,
-                    lowercase, a number, and a special character.
-                </p>
-            </div>
-
-            <div class="form-group">
-                <label for="confirmPassword">Confirm Password</label>
-                <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    minlength="8"
-                    autocomplete="new-password"
-                    placeholder="Confirm your password"
-                    aria-describedby="passwordMatch"
-                    required>
-
-                <div
-                    id="passwordMatch"
-                    class="password-hint"
-                    aria-live="polite">
-                </div>
-            </div>
-
-            <p class="note">
-                New accounts receive Viewer access by default.
-                Owner and Admin access requires authorized assignment.
-            </p>
-
-            <button
-                class="signup-button"
-                id="signupButton"
-                type="submit">
-                Create Account
-            </button>
-        </form>
-
-        <div class="footer">
-            Already have an account?
-            <a th:href="@{/login}">Sign in</a>
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input id="username"
+                   name="username"
+                   type="text"
+                   minlength="3"
+                   maxlength="50"
+                   autocomplete="username"
+                   placeholder="Choose a username"
+                   required>
         </div>
-    </main>
 
-    <script>
-        const passwordInput = document.getElementById("password");
-        const confirmInput = document.getElementById("confirmPassword");
-        const strengthMessage = document.getElementById("passwordStrength");
-        const matchMessage = document.getElementById("passwordMatch");
-        const signupForm = document.getElementById("signupForm");
-        const signupButton = document.getElementById("signupButton");
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input id="password"
+                   name="password"
+                   type="password"
+                   minlength="8"
+                   maxlength="72"
+                   autocomplete="new-password"
+                   placeholder="Create a strong password"
+                   aria-describedby="passwordHint passwordStrength"
+                   required>
 
-        function isStrongPassword(password) {
-            return password.length >= 8
-                && /[A-Z]/.test(password)
-                && /[a-z]/.test(password)
-                && /[0-9]/.test(password)
-                && /[^A-Za-z0-9]/.test(password);
+            <div id="passwordStrength" class="status" aria-live="polite">
+                Enter a password
+            </div>
+            <p id="passwordHint" class="hint">
+                Use at least 8 characters, with uppercase, lowercase,
+                a number and a special character.
+            </p>
+        </div>
+
+        <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input id="confirmPassword"
+                   name="confirmPassword"
+                   type="password"
+                   minlength="8"
+                   maxlength="72"
+                   autocomplete="new-password"
+                   placeholder="Re-enter your password"
+                   required>
+            <div id="passwordMatch" class="status" aria-live="polite"></div>
+        </div>
+
+        <div class="section-title">Account Recovery</div>
+
+        <div class="form-group">
+            <label for="recoveryQuestion">Recovery Question</label>
+            <select id="recoveryQuestion" name="recoveryQuestion" required>
+                <option value="">Choose a recovery question</option>
+                <option value="What was the name of your first school?">
+                    What was the name of your first school?
+                </option>
+                <option value="What was your favorite teacher's name?">
+                    What was your favorite teacher's name?
+                </option>
+                <option value="In which city did you grow up?">
+                    In which city did you grow up?
+                </option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="recoveryAnswer">Recovery Answer</label>
+            <input id="recoveryAnswer"
+                   name="recoveryAnswer"
+                   type="password"
+                   minlength="2"
+                   maxlength="100"
+                   autocomplete="off"
+                   placeholder="Enter your answer"
+                   required>
+            <p class="hint">
+                Remember your answer. You may need it to recover your account.
+            </p>
+        </div>
+    <p class="note">    
+        </p>
+        <button class="primary-button" id="signupButton" type="submit">
+            Create Account
+        </button>
+    </form>
+
+    <div class="footer">
+        Already have an account?
+        <a th:href="@{/login}">Sign in</a>
+    </div>
+</main>
+
+<script>
+    const passwordInput = document.getElementById("password");
+    const confirmInput = document.getElementById("confirmPassword");
+    const strengthMessage = document.getElementById("passwordStrength");
+    const matchMessage = document.getElementById("passwordMatch");
+    const signupForm = document.getElementById("signupForm");
+    const signupButton = document.getElementById("signupButton");
+
+    function isStrongPassword(password) {
+        return password.length >= 8
+            && /[A-Z]/.test(password)
+            && /[a-z]/.test(password)
+            && /[0-9]/.test(password)
+            && /[^A-Za-z0-9]/.test(password);
+    }
+
+    function updatePasswordStatus() {
+        const password = passwordInput.value;
+
+        if (!password) {
+            strengthMessage.textContent = "Enter a password";
+            strengthMessage.style.color = "#64748b";
+        } else if (isStrongPassword(password)) {
+            strengthMessage.textContent = "Password meets requirements";
+            strengthMessage.style.color = "#187344";
+        } else {
+            strengthMessage.textContent =
+                "Use 8+ characters with uppercase, lowercase, number and special character";
+            strengthMessage.style.color = "#b42318";
         }
 
-        function updatePasswordStatus() {
-            const password = passwordInput.value;
+        if (!confirmInput.value) {
+            matchMessage.textContent = "";
+        } else if (password === confirmInput.value) {
+            matchMessage.textContent = "Passwords match";
+            matchMessage.style.color = "#187344";
+        } else {
+            matchMessage.textContent = "Passwords do not match";
+            matchMessage.style.color = "#b42318";
+        }
+    }
 
-            if (password.length === 0) {
-                strengthMessage.textContent = "Enter a password";
-                strengthMessage.style.color = "#64748b";
-            } else if (isStrongPassword(password)) {
-                strengthMessage.textContent = "Password meets requirements";
-                strengthMessage.style.color = "#187344";
-            } else {
-                strengthMessage.textContent =
-                    "Use 8+ characters with uppercase, lowercase, number and special character";
-                strengthMessage.style.color = "#b42318";
-            }
+    passwordInput.addEventListener("input", updatePasswordStatus);
+    confirmInput.addEventListener("input", updatePasswordStatus);
 
-            if (confirmInput.value.length === 0) {
-                matchMessage.textContent = "";
-            } else if (password === confirmInput.value) {
-                matchMessage.textContent = "Passwords match";
-                matchMessage.style.color = "#187344";
-            } else {
-                matchMessage.textContent = "Passwords do not match";
-                matchMessage.style.color = "#b42318";
-            }
+    signupForm.addEventListener("submit", function(event) {
+        if (!isStrongPassword(passwordInput.value)) {
+            event.preventDefault();
+            strengthMessage.textContent =
+                "Please meet all password requirements.";
+            strengthMessage.style.color = "#b42318";
+            passwordInput.focus();
+            return;
         }
 
-        passwordInput.addEventListener("input", updatePasswordStatus);
-        confirmInput.addEventListener("input", updatePasswordStatus);
+        if (passwordInput.value !== confirmInput.value) {
+            event.preventDefault();
+            matchMessage.textContent = "Passwords do not match";
+            matchMessage.style.color = "#b42318";
+            confirmInput.focus();
+            return;
+        }
 
-        signupForm.addEventListener("submit", function(event) {
-            if (!isStrongPassword(passwordInput.value)) {
-                event.preventDefault();
-
-                strengthMessage.textContent =
-                    "Signup blocked. Please meet all password requirements.";
-                strengthMessage.style.color = "#b42318";
-
-                passwordInput.focus();
-                return;
-            }
-
-            if (passwordInput.value !== confirmInput.value) {
-                event.preventDefault();
-
-                matchMessage.textContent = "Passwords do not match";
-                matchMessage.style.color = "#b42318";
-
-                confirmInput.focus();
-                return;
-            }
-
-            signupButton.disabled = true;
-            signupButton.textContent = "Creating Account...";
-        });
-    </script>
+        signupButton.disabled = true;
+        signupButton.textContent = "Creating Account...";
+    });
+</script>
 </body>
 </html>
