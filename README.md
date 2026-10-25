@@ -1,96 +1,288 @@
-# TrustVault — Secure Document Sharing with a Real Audit Trail
+# 🔐 TrustVault
+### Secure Document Sharing with a Real Audit Trail
 
-TrustVault is a web application built with Java Spring Boot that enables users to upload, manage, and securely share documents with permission-based access and audit logging.
+**TrustVault** is a secure document-sharing web application built with Java and Spring Boot. It is designed to help users manage private documents, share access through permissions, and maintain an audit trail of document-related activities.
 
-## Features
+The goal is simple: make document sharing more controlled, transparent, and accountable.
 
-- User registration and login
-- Secure document upload, viewing, and downloading
-- Permission-based document sharing (VIEW and DOWNLOAD)
-- Audit logs for document-related activities
-- Admin management
-- Password recovery
-- Private document storage using generated storage identifiers
+---
 
-## Technology Stack
+## 📌 Table of Contents
 
-- Java 21
-- Spring Boot
-- Spring Security
-- Spring Data JPA / Hibernate
-- MySQL 8
-- Maven
-- HTML, CSS, and JavaScript
+- [Overview](#-overview)
+- [Key Features](#-key-features)
+- [Technology Stack](#-technology-stack)
+- [Application Architecture](#-application-architecture)
+- [Security Approach](#-security-approach)
+- [Getting Started](#-getting-started)
+- [Running Tests](#-running-tests)
+- [Project Structure](#-project-structure)
+- [Future Enhancements](#-future-enhancements)
 
-## Prerequisites
+---
 
-Install the following before running the application:
+## 🚀 Overview
+
+Sharing sensitive documents requires more than simply uploading a file. Users need control over who can access their documents and a way to review document-related activity.
+
+TrustVault addresses this need through a web application that combines authentication, permission-based sharing, private file storage, and audit logging.
+
+### Why TrustVault?
+
+- **Controlled access:** Support for different document-sharing permissions.
+- **Privacy-focused storage:** Uploaded files are stored separately from the public web resources.
+- **Account security:** Authentication and password hashing mechanisms.
+- **Accountability:** Audit logging for document-related activities.
+- **Administration:** Dedicated administrative functionality.
+
+## ✨ Key Features
+
+### 👤 User Authentication
+- User registration and login.
+- Password hashing using Spring Security's password-encoding mechanism.
+- Password recovery functionality.
+
+### 📁 Document Management
+- Upload and manage documents.
+- View and download documents subject to access permissions.
+- Configured maximum upload size of 10 MB.
+- Support for PDF, TXT, PNG, and JPEG files, subject to application validation.
+
+### 🔑 Permission-Based Sharing
+- `VIEW` permission for viewing shared documents.
+- `DOWNLOAD` permission for downloading shared documents.
+- Access checks intended to keep document operations within the permissions granted to users.
+
+### 📋 Audit Trail
+- Audit logging for document-related activities.
+- A dedicated interface for reviewing audit information.
+- A foundation for improving traceability and accountability in document access.
+
+### 🛡️ Administrative Features
+- Dedicated administrative interface.
+- Protected administrative routes.
+- Management functionality for authorized administrators.
+
+---
+
+## 🧰 Technology Stack
+
+| Technology | Purpose |
+|---|---|
+| Java 21 | Application development |
+| Spring Boot | Backend application framework |
+| Spring Security | Authentication and authorization |
+| Spring Data JPA / Hibernate | Database persistence and ORM |
+| MySQL 8 | Relational database |
+| Maven | Dependency management and build automation |
+| HTML, CSS, JavaScript | Web interface |
+
+---
+
+## 🏗️ Application Architecture
+
+TrustVault follows a layered Spring Boot application structure.
+
+```text
+User / Browser
+      |
+      v
+Web Interface
+(HTML, CSS, JavaScript)
+      |
+      v
+Spring Boot Controllers
+      |
+      v
+Security and Service Layers
+      |
+      +-------------------+
+      |                   |
+      v                   v
+MySQL Database      Private File Storage
+      |
+      v
+User, Document,
+Permission and Audit Data
+```
+
+**Architecture overview:**
+
+- **Controllers:** Handle incoming web requests.
+- **Services:** Implement application and business logic.
+- **Repositories:** Manage database access.
+- **Entities:** Represent persisted application data.
+- **Security components:** Enforce authentication and access restrictions.
+- **Private file storage:** Keeps uploaded files outside the public static-resource directory.
+
+---
+
+## 🔒 Security Approach
+
+Security is an important design consideration in TrustVault.
+
+- **Authentication:** Spring Security protects authenticated application functionality.
+- **Password protection:** Passwords are handled through password hashing rather than being stored as plain text.
+- **Authorization:** Protected routes and document permissions help restrict access.
+- **Private storage:** Uploaded documents are stored separately from public static resources.
+- **CSRF protection:** Spring Security's CSRF protection is retained in the application configuration.
+- **Configuration hygiene:** Database credentials should be supplied through local environment configuration and must not be committed to version control.
+
+> **Security note:** These controls are part of the application's current design. Production readiness requires additional verification of authorization checks, audit-log integrity, password-recovery protections, file validation, and deployment configuration.
+
+---
+
+## ⚙️ Getting Started
+
+### Prerequisites
+
+Install the following:
 
 - JDK 21
 - MySQL 8
-- Maven, or use the included Maven Wrapper
+- Git
+- Eclipse IDE or another Java IDE (optional)
 
-## Database Setup
+The included Maven Wrapper can be used to run Maven commands without installing Maven separately.
 
-1. Start your MySQL server.
-2. Create a database:
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Hepsiba-1270/TrustVault.git
+cd TrustVault
+```
+
+### 2. Create the database
+
+Start MySQL and execute:
 
 ```sql
 CREATE DATABASE trustvault;
 ```
 
-3. Configure your database username and password using your local environment configuration.
+### 3. Configure database credentials
 
-Do not commit database passwords, API keys, or other secrets to GitHub.
+Open:
 
-## Configuration
+`src/main/resources/application.properties`
 
-The application uses Spring Boot configuration in `src/main/resources/application.properties`.
+The application is configured to use the `trustvault` database on the local MySQL server and port `8082`.
 
-Set the `DB_PASSWORD` environment variable to your local MySQL password before starting the application. Ensure that the configured database username matches your MySQL account.
+Set the `DB_PASSWORD` environment variable to your local MySQL password. For Windows Command Prompt, you can set it for the current terminal session using:
 
-## Run the Application
+```bat
+set DB_PASSWORD=your_local_password
+```
 
-From the project root directory, run:
+Replace the example value with your actual local password. Never commit the real password to GitHub.
 
-**Windows:**
+Check that the configured database username matches your local MySQL account.
+
+### 4. Run the application
+
+From the project root, execute:
 
 ```bat
 mvnw.cmd spring-boot:run
 ```
 
-Or, in Eclipse, run `TrustvaultApplication.java` as a Java Application.
+Alternatively, import the project into Eclipse as a Maven project and run the main Spring Boot application class.
 
-The application is configured to use port `8082`.
+### 5. Open the application
 
-Open:
+Visit:
 
-http://localhost:8082
+**http://localhost:8082**
 
-## File Upload Restrictions
+The application requires a running MySQL server and valid database configuration.
 
-The application is configured for a maximum upload size of 10 MB. Supported document types include PDF, TXT, PNG, and JPEG, subject to application validation.
+---
 
-## Security Notes
+## 🧪 Running Tests
 
-- Spring Security protects application routes.
-- Passwords are handled using password hashing.
-- Document access is controlled by permissions.
-- Private uploaded files should not be committed to the repository.
-- Review password recovery protections, access controls, and production configuration before deployment.
-
-## Testing
-
-Run the test suite using:
+Run the automated test suite from the project root:
 
 ```bat
 mvnw.cmd test
 ```
 
-## Project Status
+A successful Maven test run should finish with `BUILD SUCCESS`.
 
-This project is being developed as a secure document-sharing application with an auditable access history.
+---
 
-## License
+## 📂 Project Structure
 
-No license has been specified yet.
+```text
+TrustVault/
+├── src/
+│   ├── main/
+│   │   ├── java/com/trustvault/
+│   │   │   ├── config/
+│   │   │   ├── controller/
+│   │   │   ├── entity/
+│   │   │   ├── repository/
+│   │   │   ├── security/
+│   │   │   └── service/
+│   │   └── resources/
+│   │       ├── static/
+│   │       ├── templates/
+│   │       └── application.properties
+│   └── test/
+├── .gitignore
+├── mvnw
+├── mvnw.cmd
+├── pom.xml
+└── README.md
+```
+
+---
+
+## 🖼️ Screenshots and Demo
+
+Screenshots and a demonstration video can be added here after they are captured from the running application.
+
+Suggested screenshots:
+
+- Login and registration
+- User dashboard
+- Document management
+- Permission management
+- Audit log interface
+- Administrative interface
+
+---
+
+## 🛣️ Future Enhancements
+
+Potential improvements include:
+
+- Expiring and revocable document-sharing links.
+- Stronger password-recovery rate limiting and abuse prevention.
+- More comprehensive security and authorization tests.
+- Tamper-resistant audit logging.
+- Production deployment with HTTPS and managed secrets.
+- Automated CI checks and deployment workflows.
+- Improved monitoring and operational documentation.
+
+These are proposed enhancements and should not be interpreted as already implemented features.
+
+---
+
+## 🤝 Contributing
+
+Contributions and suggestions are welcome. Before proposing changes:
+
+1. Review the existing implementation.
+2. Test the affected functionality.
+3. Keep secrets and private documents out of version control.
+4. Document any changes to setup or security behavior.
+
+---
+
+## 📄 License
+
+No open-source license has been specified yet. Please add an appropriate license before permitting reuse or redistribution.
+
+---
+
+**TrustVault — Secure sharing. Controlled access. Accountable activity.**
